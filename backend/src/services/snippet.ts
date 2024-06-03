@@ -3,7 +3,7 @@
 import Snippet from '../models/snippet.model';
 import { Types } from 'mongoose';
 import generateToken from '../utils/tokenGenerator';
-
+import UsedToken from '../models/usedToken.model'; 
 interface SnippetData {
   content: string;
   canEdit: boolean;
@@ -13,14 +13,15 @@ interface SnippetData {
 // Create a new snippet
 async function createSnippet(data: SnippetData) {
     try {
-      let token = generateToken(5); // Initialize token with an initial value
+      let token:string=generateToken(5); // Initialize token with an initial value
       let isUnique = false;
   
       while (!isUnique) { 
+        const existingToken = await UsedToken.findOne({ token });
         const existingSnippet = await Snippet.findOne({ token });
-        isUnique = !existingSnippet;
+        isUnique = !existingToken && !existingSnippet;
         if (!isUnique) {
-          token = generateToken(5); // Regenerate token only if not unique
+            token = generateToken(5);
         }
       }
 
