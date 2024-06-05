@@ -7,7 +7,8 @@ import { snippetState, errorState } from '../state/atoms';
 import { Snippet } from '../../../shared/types';
 import * as Y from 'yjs';
 import { ReactEditor } from 'slate-react';
-import { Descendant } from 'slate';         interface TextEditorProps {
+import { Descendant } from 'slate';         
+interface TextEditorProps {
   initialContent: Y.Doc;
   canEdit: boolean;
   snippetId: string;
