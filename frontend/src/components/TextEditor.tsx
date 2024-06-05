@@ -1,48 +1,43 @@
-// frontend/src/components/TextEditor.tsx
-import React, { useEffect, useRef, useState } from 'react';
-import { createEditor, Editor, Transforms, Text } from 'slate';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { createEditor, Editor, Transforms } from 'slate';
 import { Slate, Editable, withReact } from 'slate-react';
 import { io } from 'socket.io-client';
-
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useSetRecoilState } from 'recoil';
 import { snippetState, errorState } from '../state/atoms';
 import { Snippet } from '../../../shared/types';
 import * as Y from 'yjs';
-
-interface TextEditorProps {
-  initialContent: Y.Doc; 
+import { ReactEditor } from 'slate-react';
+import { Descendant } from 'slate';         interface TextEditorProps {
+  initialContent: Y.Doc;
   canEdit: boolean;
   snippetId: string;
 }
-
 const TextEditor: React.FC<TextEditorProps> = ({ initialContent, canEdit, snippetId }) => {
-  const editorRef = useRef<Editor>(withReact(createEditor())); 
-  const [value, setValue] = useState<any>(initialContent ? initialContent.getText('content').toJSON() : null); 
+  const editorRef = useRef<ReactEditor>(null);
+  const [value, setValue] = useState<Descendant[]>([{ text: '' }]); 
   const socket = useRef<any>(null);
-  const [, setError] = useRecoilState(errorState);
-  
-  // Typeguard function to check if value is a Y.Doc
+  const setSnippet = useSetRecoilState(snippetState);
+  const setError = useSetRecoilState(errorState);
   const isYDoc = (value: any): value is Y.Doc => value instanceof Y.Doc;
-  
-  let ydoc: Y.Doc; 
-  
+  let ydoc: Y.Doc;
+
   useEffect(() => {
     const editor = editorRef.current;
+    if (!editor) return;
+
     // Initialize Socket.IO connection
     socket.current = io('/snippet');
-    
-    if (isYDoc(initialContent)) {
-      ydoc = initialContent; // Set the initial content
-      ydoc.on('update', updateEditor);
-      setValue(ydoc.getText('content').toJSON());
-    }
-    
     socket.current.on('connect', () => {
       socket.current.emit('joinSnippet', snippetId); // Join the snippet room
+      if (!ydoc) {
+        ydoc = initialContent;
+        ydoc.on('update', updateEditor);
+        setValue([{text: ydoc.getText('content').toString()}]);
+      }
     });
 
     function updateEditor() {
-        setValue(ydoc.getText('content').toJSON());
+      setValue([{text: ydoc.getText('content').toString()}]);
     }
 
     socket.current.on('snippetUpdated', (changes: any) => {
@@ -58,35 +53,39 @@ const TextEditor: React.FC<TextEditorProps> = ({ initialContent, canEdit, snippe
             }
           });
         });
-        setValue(initialContent.getText('content').toJSON());
+        setValue([{text: ydoc.getText('content').toString()}]);
       }
     });
 
     return () => {
       if (socket.current) {
         socket.current.disconnect(); // Clean up on unmount
-        ydoc.off('update', updateEditor); // Remove the listener
+        initialContent.off('update', updateEditor); // Remove the listener
       }
     };
   }, [snippetId, canEdit, initialContent]);
 
-  const handleEdit = (newValue: any) => {
+  const handleEdit =  useCallback((newValue: Descendant[]) => {
     setValue(newValue);
     if (!canEdit || !isYDoc(initialContent)) return;
 
-    const oldText = initialContent?.getText('content');
-    const newText = newValue.getText('content');
+    const ytext = initialContent.getText('content');
+    
+    ytext.applyDelta(newValue);
 
-    const changes = ydoc.getText('content').toDelta(oldText, newText);
+    const changes = ytext.toDelta();
     socket.current.emit('updateSnippet', snippetId, changes);
-  };
+  }, [canEdit, initialContent, snippetId, socket]);
+
 
   return (
-    <Slate editor={editorRef.current} value={value} onChange={handleEdit}>
-      <Editable readOnly={!canEdit} />
-    </Slate>
+    <div>
+    {editorRef.current && (
+      <Slate editor={editorRef.current} initialValue={value} onChange={handleEdit}>
+        <Editable readOnly={!canEdit} />
+      </Slate>
+    )}
+    </div>
   );
 };
-
 export default TextEditor;
-
