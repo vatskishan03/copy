@@ -1,10 +1,24 @@
+// frontend/src/index.tsx
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import './index.css';
-import AppRoutes from './routes'; // Import AppRoutes
+import './index.css'; 
+import App from './App';
+import reportWebVitals from './reportWebVitals'; // Optional: for performance monitoring
+// import * as Y from 'yjs';
 
-ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+// import { WebsocketProvider } from 'y-websocket';
+
+const root = ReactDOM.createRoot(
+  document.getElementById('root')as HTMLElement
+);
+root.render(
   <React.StrictMode>
-    <AppRoutes />
+    <App />
   </React.StrictMode>
 );
+
+// If you want to start measuring performance in your app, pass a function
+// to log results (for example: reportWebVitals(console.log))
+// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
+reportWebVitals();

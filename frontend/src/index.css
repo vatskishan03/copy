@@ -1,26 +1,11 @@
+/* frontend/src/index.css (or main.css, globals.css, etc.) */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-*, *::before, *::after {
-  box-sizing: border-box;
-}
-
+/* Optional: Add your own custom global styles here */
 body {
-  margin: 0;
-  font-family: 'YourFontFamily', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
-}
-
-/* Custom base styles */
-@layer base {
-  h1 {
-    @apply text-2xl font-bold; 
-  }
+  font-family: 'Inter', sans-serif; /* Example font */
+  background-color: #f8fafc;
 }

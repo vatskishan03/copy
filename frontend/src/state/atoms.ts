@@ -12,3 +12,7 @@ export const snippetState = atom<SnippetWithYDoc | null>({
   key: 'snippetState',
   default: null,
 });
+export const errorState = atom<string | null>({
+  key: 'errorState',
+  default: null,
+});

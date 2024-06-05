@@ -19,4 +19,3 @@ export const isSnippetEditableSelector = selector({
   },
 });
 
-// Add more selectors as needed for other derived or computed values...
