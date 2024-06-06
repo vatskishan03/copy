@@ -4,14 +4,14 @@
   "version": "1.0.0",
   "main": "src/app.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "ts-node -r tsconfig-paths/register src/app.ts"
+    "start": "node --loader ts-node/esm --trace-uncaught src/app.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@types/node": "^20.14.2",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
@@ -20,6 +20,7 @@
     "express": "^4.19.2",
     "mongoose": "^8.4.1",
     "socket.io": "^4.7.5",
+    "typescript": "^5.4.5",
     "y-websocket": "^2.0.3",
     "yjs": "^13.6.15"
   },

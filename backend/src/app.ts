@@ -1,15 +1,15 @@
-import './module-alias';
+// import 'tsconfig-paths/register';
+// import './module-alias';
 import express ,{Application, Request, Response, NextFunction}  from 'express'
 import cors from 'cors';
 import * as dotenv from 'dotenv';
-import env from './config/env';
-import connectDB from './config/db';
-import snippetRoutes from './routes/snippet';
-import snippetController from './controllers/snippet';
+import env from './config/env.js';
+import connectDB from './config/db.js';
+import snippetRoutes from './routes/snippet.js';
+import snippetController from './controllers/snippet.js';
 import { Server } from 'socket.io';
 import http from 'http';
 import * as path from 'path';
-import 'tsconfig-paths/register';
 
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 const app: Application = express();
