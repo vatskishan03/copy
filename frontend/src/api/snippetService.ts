@@ -1,6 +1,6 @@
 // frontend/src/api/snippetService.ts
 import axios from 'axios'; // You'll need to install axios: npm install axios
-import { Snippet } from '../../../shared/types'; // Assuming you have shared types for Snippet
+import { Snippet } from 'shared/types'; // Assuming you have shared types for Snippet
 
 const API_BASE_URL = '/api/snippet'; // Update if your backend has a different base URL
 

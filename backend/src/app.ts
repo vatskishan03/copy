@@ -1,4 +1,5 @@
-import express ,{Application, Request, Response, NextFunction}  from 'express';
+import './module-alias';
+import express ,{Application, Request, Response, NextFunction}  from 'express'
 import cors from 'cors';
 import * as dotenv from 'dotenv';
 import env from './config/env';
@@ -8,6 +9,7 @@ import snippetController from './controllers/snippet';
 import { Server } from 'socket.io';
 import http from 'http';
 import * as path from 'path';
+import 'tsconfig-paths/register';
 
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 const app: Application = express();

@@ -2,7 +2,8 @@ import React, { useState, FormEvent } from 'react';
 import { useRecoilState } from 'recoil';
 import { snippetState, errorState } from '../state/atoms'; // Import your Recoil atoms
 import { createSnippet } from '../api/snippetService';
-import { useNavigate } from 'react-router-dom'; // If you're using react-router-dom for navigation
+import { useNavigate } from 'react-router-dom';
+import * as Y from 'yjs'; 
 
 function CreateSnippetForm() {
   const [content, setContent] = useState('');
@@ -15,14 +16,20 @@ function CreateSnippetForm() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+  
     try {
-      const newSnippet = await createSnippet(content, canEdit);
-      setSnippet(newSnippet); // Store the created snippet in Recoil
-      navigate(`/receive/${newSnippet.token}`); // Navigate to the receive page (if using routing)
+      const snippet = await createSnippet(content, canEdit);
+      setSnippet(snippet); 
+      navigate(`/receive/${snippet.token}`); 
     } catch (error: any) {
-      setError(error.response.data.error || 'An error occurred.'); // Set error in Recoil
-    }
-    finally {
+      // Handle the error here
+      console.error(error);
+      if (error.response && error.response.data && error.response.data.message) {
+        setError(error.response.data.message);
+      } else {
+        setError('An unexpected error occurred');
+      }
+    } finally {
       setIsLoading(false);
     }
   };

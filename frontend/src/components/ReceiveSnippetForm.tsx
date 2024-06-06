@@ -1,16 +1,16 @@
-// frontend/src/components/ReceiveSnippetForm.tsx
 import React, { useState, FormEvent } from 'react';
 import { useRecoilState } from 'recoil';
 import { snippetState, errorState } from '../state/atoms';
 import { getSnippet } from '../api/snippetService';
 import { useNavigate } from 'react-router-dom';
-import TextEditor from './TextEditor'; // Import your text editor component
+import TextEditor from './TextEditor'; 
+import * as Y from 'yjs';
 
 function ReceiveSnippetForm() {
   const [token, setToken] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [snippet, setSnippet] = useRecoilState(snippetState);
-  const [, setError] = useRecoilState(errorState);
+  const [error, setError] = useRecoilState(errorState);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: FormEvent) => {
@@ -18,12 +18,15 @@ function ReceiveSnippetForm() {
     setIsLoading(true);
     try {
       const fetchedSnippet = await getSnippet(token);
+      if (!fetchedSnippet) {
+        throw new Error('Invalid token or snippet not found.'); // Throw an error if not found
+      }
+
       setSnippet(fetchedSnippet);
     } catch (error: any) {
-      setError(error.response.data.error || 'An error occurred.');
-      navigate('/');  // Redirect back to the home page on error
-    }
-    finally {
+      setError(error.response?.data?.message || 'An error occurred.');
+      navigate('/');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -43,6 +46,12 @@ function ReceiveSnippetForm() {
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           />
         </div>
+
+        {/* Error Message Display */}
+        {error && (
+          <p className="text-red-500 text-sm">{error}</p>
+        )}
+
         <button
           type="submit"
           className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
@@ -52,14 +61,13 @@ function ReceiveSnippetForm() {
         </button>
       </form>
 
-      {/* Conditionally render the text editor */}
       {snippet && (
         <div className="mt-8">
           <TextEditor
-            initialContent={snippet.content}}
+            initialContent={snippet.content}
             canEdit={snippet.canEdit} 
-            snippetId={snippet.id}
-            />
+            snippetId={snippet._id as string}
+          />
         </div>
       )}
     </div>
@@ -67,3 +75,4 @@ function ReceiveSnippetForm() {
 }
 
 export default ReceiveSnippetForm;
+

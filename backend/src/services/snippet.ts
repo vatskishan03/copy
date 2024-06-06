@@ -1,5 +1,4 @@
-// backend/src/services/snippet.ts
-
+import * as Y from 'yjs';
 import Snippet from '../models/snippet.model';
 import { Types } from 'mongoose';
 import generateToken from '../utils/tokenGenerator';
@@ -11,7 +10,7 @@ interface SnippetData {
 }
 
 // Create a new snippet
-async function createSnippet(data: SnippetData) {
+async function createSnippet(data: SnippetData): Promise<Snippet> {
     try {
       let token:string=generateToken(5); // Initialize token with an initial value
       let isUnique = false;
@@ -25,13 +24,18 @@ async function createSnippet(data: SnippetData) {
         }
       }
 
+    const ydoc = new Y.Doc();
+    ydoc.getText('content').insert(0, data.content);
     const snippet = new Snippet({
       ...data,
       token, // Use the token generated in the loop
       // expiresAt: data.expiresAt // Add expiration if needed (calculate based on your logic)
     });
-
-    return await snippet.save();
+    const savedSnippet = await snippet.save();
+    return {
+      ...savedSnippet.toObject(),
+      content: ydoc, // Include the Y.Doc in the returned object
+    };
   } catch (error) {
     throw error; 
   }

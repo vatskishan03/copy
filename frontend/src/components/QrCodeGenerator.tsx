@@ -1,4 +1,3 @@
-// frontend/src/components/QrCodeGenerator.tsx
 import React from 'react';
 import QRCode from 'react-qr-code';
 
