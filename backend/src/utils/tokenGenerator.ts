@@ -1,4 +1,3 @@
-// backend/src/utils/tokenGenerator.ts
 import crypto from 'crypto';
 
 function generateToken(length = 5): string {
@@ -7,8 +6,7 @@ function generateToken(length = 5): string {
   while (token.length < length) {
     const randomBytes = crypto.randomBytes(1);
     const randomChar = charset.charAt(randomBytes[0] % charset.length);
-
-    // Ensure the token matches the desired pattern
+    
     if (token.length === 0 && /\d/.test(randomChar)) { 
       token += randomChar; // First character must be a digit
     } else if (token.length === 1 && /\d/.test(randomChar)) {
