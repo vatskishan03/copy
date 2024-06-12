@@ -14,7 +14,7 @@ const router = createBrowserRouter([
     element: <ReceiveSnippetForm />,
   },
   {
-    path: "/display/:token", // Optional, if you have a separate display page
+    path: "/display/:token", 
     element: <SnippetDisplay />,
   },
 ]);
