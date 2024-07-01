@@ -1,6 +1,6 @@
 // backend/src/models/snippet.model.ts
 import mongoose, { Schema } from 'mongoose';
-import { Snippet } from '../../../shared/types'; 
+import { Snippet } from 'shared/types';
 
 const snippetSchema: Schema<Snippet> = new mongoose.Schema({
   content: {
