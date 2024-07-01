@@ -1,6 +1,6 @@
 import express ,{Application, Request, Response, NextFunction}  from 'express'
 import cors from 'cors';
-import * as dotenv from 'dotenv';
+import * as dotenv from "dotenv";
 import env from './config/env.js';
 import connectDB from './config/db.js';
 import snippetRoutes from './routes/snippet.js';

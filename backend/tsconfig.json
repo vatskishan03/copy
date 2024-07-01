@@ -1,20 +1,20 @@
 {
-    "compilerOptions": {
-      "target": "ES2016",
-      "module": "CommonJS",
-      "strict": true,
-      "rootDir": "./src",
-      "outDir": "./dist",
-      "esModuleInterop": true,
-      "skipLibCheck": true,
-      "forceConsistentCasingInFileNames": true,
-      "baseUrl": ".",
-      "paths": {
-        "*": ["node_modules/*"]
-      },
-      // "noImplicitAny":false,
-      // }
-    },
-    "include": ["src/**/*"],
-    "exclude": ["node_modules"]
-  }
+  "compilerOptions": {
+    "target": "ESNext",
+    "moduleResolution":"node",     // Target ECMAScript version (you can use a newer one if supported)
+    "module": "ESNext",   // Module system for Node.js
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],       // Type definitions for the target ECMAScript version
+    "sourceMap": true,      // Generate source maps for debugging
+    "outDir": "./dist",   // Output directory for compiled JavaScript files
+    "rootDirs": ["./src", "../shared"],   // Root directory for your TypeScript source code
+    "esModuleInterop": true,   // Enable interoperability between CommonJS and ES Modules
+    "skipLibCheck": true,     // Skip type checking of declaration files (e.g., from node_modules)
+    "forceConsistentCasingInFileNames": true, // Enforce consistent casing in file names (e.g., myFile.ts vs. MyFile.ts)
+    "baseUrl": ".",          // Base URL for resolving non-absolute module names
+    "paths": {               // Path mapping for shared modules (and potentially others)
+      "shared/*": ["../shared/*"]
+    }
+  },
+  "include": ["src/**/*", "../shared/**/*"], // Include all TypeScript files within the src directory and the shared folder
+  "exclude": ["node_modules"]
+}
