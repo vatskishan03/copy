@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
+    "target": "ES2016",
     "lib": ["dom", "dom.iterable", "esnext"], // Include DOM types for React
     "allowJs": true,
     "skipLibCheck": true,

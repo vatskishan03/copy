@@ -1,9 +1,9 @@
-import React, { useEffect } from 'react';
-import { RecoilRoot } from 'recoil';
-import CreateSnippetForm from './components/CreateSnippetForm';
-import ReceiveSnippetForm from './components/ReceiveSnippetForm';
-import AppRoutes from './routes'; 
-import { ErrorBoundary } from 'react-error-boundary';
+import React, { useState } from "react";
+import { RecoilRoot } from "recoil";
+import { ErrorBoundary } from "react-error-boundary";
+import CreateSnippetForm from "./components/CreateSnippetForm";
+import ReceiveSnippetForm from "./components/ReceiveSnippetForm";
+import { useNavigate } from "react-router-dom";
 
 function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void; }) {
   return (
@@ -16,25 +16,54 @@ function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetError
     </div>
   );
 }
+
 function App() {
+  const [showReceiveForm, setShowReceiveForm] = useState(false);
+  const navigate = useNavigate();
+  const handleReceiveCopyClick = () => {
+    setShowReceiveForm(true);
+    navigate("/receive");
+  };
+
+  const handleCreateCopyClick = () => {
+    setShowReceiveForm(false);
+    navigate("/");
+  };
+
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <RecoilRoot>
         <div className="min-h-screen bg-gray-100">
-          <header className="bg-white py-4 shadow">
-            <div className="container mx-auto px-4">
-              <h1 className="text-3xl font-bold text-center">
-                Text Sharing App
-              </h1>
-            </div>
-          </header>
-          <main className="container mx-auto px-4 py-8">
-            <AppRoutes />
+          {/* ... (your header component) */}
+
+          <main className="container mx-auto px-4 py-8 flex justify-center gap-4">
+            {!showReceiveForm && <CreateSnippetForm />}
+            {showReceiveForm && <ReceiveSnippetForm />}
           </main>
+
+          <div className="container mx-auto px-4 pb-8 flex justify-center gap-4">
+            {!showReceiveForm ? (
+              <button
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                onClick={handleReceiveCopyClick}
+              >
+                Receive Copy
+              </button>
+            ) : (
+              <button
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                onClick={handleCreateCopyClick}
+              >
+                Create Copy
+              </button>
+            )}
+          </div>
         </div>
       </RecoilRoot>
     </ErrorBoundary>
   );
 }
-
 export default App;
+
+
+

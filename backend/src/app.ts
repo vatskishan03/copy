@@ -1,5 +1,3 @@
-// import 'tsconfig-paths/register';
-// import './module-alias';
 import express ,{Application, Request, Response, NextFunction}  from 'express'
 import cors from 'cors';
 import * as dotenv from 'dotenv';
@@ -21,7 +19,7 @@ app.set('io', io); // Make Socket.IO accessible in routes
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded());
 
 // Routes
 app.use('/api/snippet', snippetRoutes);

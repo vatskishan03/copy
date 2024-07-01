@@ -1,21 +1,11 @@
-import React from 'react';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import CreateSnippetForm from '../components/CreateSnippetForm';
-import ReceiveSnippetForm from '../components/ReceiveSnippetForm';
-import SnippetDisplay from '../components/SnippetDisplay'; // If you have a dedicated page to display the snippet
+import React from "react";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import Home from "../App";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <CreateSnippetForm />,
-  },
-  {
-    path: "/receive/:token",
-    element: <ReceiveSnippetForm />,
-  },
-  {
-    path: "/display/:token", // Optional, if you have a separate display page
-    element: <SnippetDisplay />,
+    element: <Home />,
   },
 ]);
 

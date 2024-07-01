@@ -1,7 +1,8 @@
 // backend/src/models/snippet.model.ts
-import mongoose from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
+import { Snippet } from '../../../shared/types'; 
 
-const snippetSchema = new mongoose.Schema({
+const snippetSchema: Schema<Snippet> = new mongoose.Schema({
   content: {
     type: String,
     required: true,
@@ -9,7 +10,7 @@ const snippetSchema = new mongoose.Schema({
   token: {
     type: String,
     required: true,
-    unique: true, // Ensure each token is unique
+    unique: true,
   },
   canEdit: {
     type: Boolean,
@@ -21,10 +22,9 @@ const snippetSchema = new mongoose.Schema({
   },
   expiresAt: {
     type: Date,
-    required: true,
-    default: () => new Date(Date.now() + 6 * 60 * 60 * 1000), // You can choose to make this required if you want all snippets to expire
+    required: false,
   },
 });
 
-const Snippet = mongoose.model('Snippet', snippetSchema);
+const Snippet = mongoose.model<Snippet>('Snippet', snippetSchema);
 export default Snippet;
