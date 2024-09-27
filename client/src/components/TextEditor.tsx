@@ -1,23 +1,25 @@
 import React, { useEffect, useRef } from 'react';
 import * as Y from 'yjs';
-import { WebsocketProvider } from 'y-websocket';
 import { QuillBinding } from 'y-quill';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
 import { useAuth0 } from '@auth0/auth0-react';
+import { useWebSocket } from '../hooks/useWebSocket';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 
-const WEBSOCKET_ENDPOINT = 'ws://localhost:1234'; // Replace with your WebSocket server endpoint
+const WEBSOCKET_ENDPOINT = 'ws://localhost:1234';
 const DOCUMENT_NAME = 'quill-demo';
 
 const TextEditor: React.FC = () => {
   const editorRef = useRef<HTMLDivElement>(null);
   const { getAccessTokenSilently } = useAuth0();
+  const { provider, connected } = useWebSocket(WEBSOCKET_ENDPOINT, DOCUMENT_NAME);
+  const [lastEditedContent, setLastEditedContent] = useLocalStorage<string>('lastEditedContent', '');
 
   useEffect(() => {
-    if (!editorRef.current) return;
+    if (!editorRef.current || !provider) return;
 
-    const ydoc = new Y.Doc();
-    const provider = new WebsocketProvider(WEBSOCKET_ENDPOINT, DOCUMENT_NAME, ydoc);
+    const ydoc = provider.doc;
     const ytext = ydoc.getText('quill');
 
     const editor = new Quill(editorRef.current, {
@@ -33,27 +35,32 @@ const TextEditor: React.FC = () => {
 
     const binding = new QuillBinding(ytext, editor);
 
-    // Awareness (optional)
-    const awareness = provider.awareness;
-    awareness.setLocalStateField('user', {
-      name: 'Anonymous', // You can set this to the user's name from Auth0
-      color: '#' + Math.floor(Math.random() * 16777215).toString(16) // Random color
+    // Set initial content from localStorage if available
+    if (lastEditedContent) {
+      editor.setText(lastEditedContent);
+    }
+
+    // Save content to localStorage on change
+    editor.on('text-change', () => {
+      setLastEditedContent(editor.getText());
     });
 
-    // Clean up
+    const awareness = provider.awareness;
+    awareness.setLocalStateField('user', {
+      name: 'Anonymous',
+      color: '#' + Math.floor(Math.random() * 16777215).toString(16)
+    });
+
     return () => {
       binding.destroy();
-      provider.disconnect();
     };
-  }, []);
+  }, [provider, lastEditedContent, setLastEditedContent]);
 
   const handleSave = async () => {
     try {
       const token = await getAccessTokenSilently();
-      // Here you would typically send the document state to your server
-      // This is just a placeholder for now
       console.log('Saving document...');
-      // In a real application, you'd send the Yjs document state to your server
+      // Here you would send the document state to your server
     } catch (error) {
       console.error('Error saving document:', error);
     }
@@ -69,6 +76,11 @@ const TextEditor: React.FC = () => {
       >
         Save
       </button>
+      {connected ? (
+        <p className="text-green-500 mt-2">Connected to server</p>
+      ) : (
+        <p className="text-red-500 mt-2">Disconnected from server</p>
+      )}
     </div>
   );
 };
