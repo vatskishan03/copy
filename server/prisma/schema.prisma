@@ -8,14 +8,11 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String    @id // This will now be the Auth0 user ID
+  email     String    @unique
   snippets  Snippet[]
-
-  @@index([email])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model Snippet {

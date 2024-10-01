@@ -1,15 +1,19 @@
 import { Request, Response } from 'express';
 import * as snippetService from '../services/snippetService';
+import { io } from '../app';
 
-interface RequestWithUser extends Request {
-  user?: { id: string };
-}
-
+interface AuthenticatedRequest extends Request {
+    user?: { id: string };
+  }
 export const createSnippet = async (req: Request, res: Response) => {
   try {
     const { content } = req.body;
-    const userId = (req as RequestWithUser).user?.id; // Assuming user info is attached to req by auth middleware
-    const result = await snippetService.createSnippet(content, userId);
+    const userId = (req as AuthenticatedRequest).user?.id;
+const result = await snippetService.createSnippet(content, userId);
+    
+    // Emit event for real-time updates
+    io.emit('snippet-created', { token: result.token, content });
+
     res.status(201).json(result);
   } catch (error) {
     res.status(500).json({ error: 'Failed to create snippet' });
@@ -28,8 +32,8 @@ export const getSnippet = async (req: Request, res: Response) => {
     } else {
       res.status(500).json({ error: 'Failed to retrieve snippet' });
     }
-  }
 }
+  }
 };
 
 export const updateSnippet = async (req: Request, res: Response) => {
@@ -37,11 +41,12 @@ export const updateSnippet = async (req: Request, res: Response) => {
     const { token } = req.params;
     const { content } = req.body;
     await snippetService.updateSnippet(token, content);
+    
+    // Emit event for real-time updates
+    io.to(token).emit('snippet-updated', { token, content });
+
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ error: 'Failed to update snippet' });
   }
-}
-
-
-
+};

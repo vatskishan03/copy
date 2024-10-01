@@ -1,35 +1,32 @@
 import express from 'express';
-import { createServer } from 'http';
-import { Server } from 'socket.io';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import http from 'http';
+import cors from 'cors';
+import snippetRoutes from './routes/snippetRoutes';
+import { initializeWebSocket } from './services/websocketService';
 
 const app = express();
-const httpServer = createServer(app);
-const io = new Server(httpServer, {
-  cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
-    methods: ['GET', 'POST']
-  }
-});
+const server = http.createServer(app);
 
-const PORT = process.env.PORT || 5000;
-
+// Middleware
+app.use(cors());
 app.use(express.json());
 
-app.get('/', (req, res) => {
-  res.send('Clipboard API is running');
+// Routes
+app.use('/api/snippets', snippetRoutes);
+
+// Initialize WebSocket
+const io = initializeWebSocket(server);
+
+// Error handling middleware
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error(err.stack);
+  res.status(500).send('Something broke!');
 });
 
-io.on('connection', (socket) => {
-  console.log('A user connected');
-  
-  socket.on('disconnect', () => {
-    console.log('User disconnected');
-  });
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
 
-httpServer.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+export { app, server, io };
