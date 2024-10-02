@@ -1,72 +1,48 @@
-import prisma from '../config/database';
-import redisClient from '../config/redis';
-import { generateToken } from '../utils/tokenGenerator';
+import { PrismaClient } from '@prisma/client';
 import { encrypt, decrypt } from '../utils/encryption';
+import { generateToken } from '../utils/tokenGenerator';
 
-const EXPIRATION_DAYS = 7;
-const CACHE_TTL = 3600; // 1 hour in seconds
+const prisma = new PrismaClient();
 
-export const createSnippet = async (content: string, userId?: string) => {
-  const token = await generateToken();
-  const encryptedToken = encrypt(token);
+export const createSnippet = async (content: string, userId: string) => {
   const encryptedContent = encrypt(content);
-  const expiresAt = new Date(Date.now() + EXPIRATION_DAYS * 24 * 60 * 60 * 1000);
+  const token = await generateToken();
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Expires in 7 days
 
   const snippet = await prisma.snippet.create({
     data: {
-      token: encryptedToken,
       content: encryptedContent,
-      expiresAt,
       userId,
+      token,
+      expiresAt,
     },
   });
 
-  await redisClient.setex(`snippet:${encryptedToken}`, CACHE_TTL, encryptedContent);
-
-  return { token };
+  return { ...snippet, content }; // Includes decrypted content
 };
-
-export const getSnippet = async (token: string) => {
-  const encryptedToken = encrypt(token);
-  const cachedContent = await redisClient.get(`snippet:${encryptedToken}`);
-  if (cachedContent) {
-    return { content: decrypt(cachedContent) };
-  }
-
-  const snippet = await prisma.snippet.findUnique({
-    where: { token: encryptedToken },
-  });
-
-  if (!snippet) {
-    throw new Error('Snippet not found');
-  }
-
-  if (snippet.expiresAt < new Date()) {
-    await prisma.snippet.delete({ where: { token: encryptedToken } });
-    throw new Error('Snippet has expired');
-  }
-
+export const getSnippet = async (id: string) => {
+  const snippet = await prisma.snippet.findUnique({ where: { id } });
+  if (!snippet) return null;
   const decryptedContent = decrypt(snippet.content);
-  await redisClient.setex(`snippet:${encryptedToken}`, CACHE_TTL, snippet.content);
-
-  return { content: decryptedContent };
+  return { ...snippet, content: decryptedContent };
 };
 
-export const updateSnippet = async (token: string, content: string) => {
-  const encryptedToken = encrypt(token);
+export const updateSnippet = async (id: string, content: string) => {
   const encryptedContent = encrypt(content);
-
-  await prisma.snippet.update({
-    where: { token: encryptedToken },
-    data: { content: encryptedContent, updatedAt: new Date() },
+  const updatedSnippet = await prisma.snippet.update({
+    where: { id },
+    data: { content: encryptedContent },
   });
-
-  await redisClient.setex(`snippet:${encryptedToken}`, CACHE_TTL, encryptedContent);
+  return { ...updatedSnippet, content };
 };
 
-export const deleteExpiredSnippets = async () => {
-  const now = new Date();
-  await prisma.snippet.deleteMany({
-    where: { expiresAt: { lt: now } },
-  });
+export const deleteSnippet = async (id: string) => {
+  return prisma.snippet.delete({ where: { id } });
+};
+
+export const snippetService = {
+  createSnippet,
+  getSnippet,
+  updateSnippet,
+  deleteSnippet
 };
