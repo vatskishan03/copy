@@ -30,3 +30,4 @@ server.listen(PORT, () => {
 });
 
 export { app, server, io };
+export const webSocketService = new WebSocketService(server);

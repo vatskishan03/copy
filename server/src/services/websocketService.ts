@@ -1,42 +1,69 @@
 import { Server as HttpServer } from 'http';
-import { Server, Socket } from 'socket.io';
-import { getSnippet, updateSnippet } from './snippetService';
-import { logger } from '../utils/logger';
+import { Server as SocketIOServer, Socket } from 'socket.io';
+import * as Y from 'yjs';
+import { WebsocketProvider } from 'y-websocket';
+import { decrypt, encrypt } from '../utils/encryption';
 
-export const initializeWebSocket = (httpServer: HttpServer) => {
-  const io = new Server(httpServer, {
-    cors: {
-      origin: process.env.CLIENT_URL || 'http://localhost:3000',
-      methods: ['GET', 'POST'],
-    },
-  });
+export class WebSocketService {
+  private io: SocketIOServer;
+  private rooms: Map<string, Y.Doc> = new Map();
 
-  io.on('connection', (socket: Socket) => {
-    logger.info(`New WebSocket connection: ${socket.id}`);
-
-    socket.on('join-snippet', async (token: string) => {
-      try {
-        const snippet = await getSnippet(token);
-        socket.join(token);
-        socket.emit('snippet-data', snippet.content);
-      } catch (error) {
-        socket.emit('error', 'Failed to join snippet room');
-      }
+  constructor(server: HttpServer) {
+    this.io = new SocketIOServer(server, {
+      cors: {
+        origin: process.env.CLIENT_URL || 'http://localhost:3000',
+        methods: ['GET', 'POST'],
+      },
     });
 
-    socket.on('update-snippet', async ({ token, content }: { token: string; content: string }) => {
-      try {
-        await updateSnippet(token, content);
-        socket.to(token).emit('snippet-updated', content);
-      } catch (error) {
-        socket.emit('error', 'Failed to update snippet');
-      }
-    });
+    this.io.on('connection', this.handleConnection.bind(this));
+  }
 
-    socket.on('disconnect', () => {
-      logger.info(`WebSocket disconnected: ${socket.id}`);
-    });
-  });
+  private handleConnection(socket: Socket) {
+    console.log('New client connected');
 
-  return io;
-};
+    socket.on('join-room', (roomId: string) => this.handleJoinRoom(socket, roomId));
+    socket.on('leave-room', (roomId: string) => this.handleLeaveRoom(socket, roomId));
+    socket.on('disconnect', () => this.handleDisconnect(socket));
+  }
+
+  private handleJoinRoom(socket: Socket, roomId: string) {
+    socket.join(roomId);
+    console.log(`Client joined room: ${roomId}`);
+
+    if (!this.rooms.has(roomId)) {
+      const doc = new Y.Doc();
+      this.rooms.set(roomId, doc);
+
+      new WebsocketProvider(`ws://localhost:${process.env.PORT}`, roomId, doc);
+    }
+
+    const doc = this.rooms.get(roomId)!;
+    const encryptedContent = doc.getText('content').toString();
+    const decryptedContent = decrypt(encryptedContent);
+
+    socket.emit('initial-content', decryptedContent);
+  }
+
+  private handleLeaveRoom(socket: Socket, roomId: string) {
+    socket.leave(roomId);
+    console.log(`Client left room: ${roomId}`);
+  }
+
+  private handleDisconnect(socket: Socket) {
+    console.log('Client disconnected');
+  }
+
+  public async updateContent(roomId: string, content: string) {
+    const doc = this.rooms.get(roomId);
+    if (doc) {
+      const encryptedContent = encrypt(content);
+      doc.getText('content').delete(0, doc.getText('content').length);
+      doc.getText('content').insert(0, encryptedContent);
+    }
+  }
+public async notifySnippetDeleted(snippetId: string) {
+  this.io.to(snippetId).emit('snippet-deleted', snippetId);
+  this.rooms.delete(snippetId);
+}
+}
