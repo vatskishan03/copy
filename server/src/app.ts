@@ -3,6 +3,7 @@ import http from 'http';
 import cors from 'cors';
 import snippetRoutes from './routes/snippetRoutes';
 import { initializeWebSocket } from './services/websocketService';
+import { standardLimiter, apiLimiter } from './middlewares/rateLimiter';
 
 const app = express();
 const server = http.createServer(app);
@@ -10,12 +11,15 @@ const server = http.createServer(app);
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(standardLimiter);
 
 // Routes
 app.use('/api/snippets', snippetRoutes);
 
 // Initialize WebSocket
 const io = initializeWebSocket(server);
+
+app.use('/api/', apiLimiter);
 
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {

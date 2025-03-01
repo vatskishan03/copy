@@ -17,6 +17,7 @@ router.get(
   '/:token',
   validateSnippetRetrieval,
   handleValidationErrors,
+  cacheMiddleware(60), // 1 minute cache
   snippetController.getSnippet
 );
 router.put(

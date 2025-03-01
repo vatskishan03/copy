@@ -12,9 +12,15 @@ const ClipboardForm: React.FC<ClipboardFormProps> = ({ initialContent = '', onSu
     setContent(initialContent);
   }, [initialContent]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(content);
+    
+    // Generate a key from user's session or a secured key
+    const encryptionKey = await getEncryptionKey(); 
+    const encryptedContent = await encryptContent(content, encryptionKey);
+    
+    // Store the key securely in localStorage or auth state
+    onSubmit(encryptedContent);
   };
 
   return (
