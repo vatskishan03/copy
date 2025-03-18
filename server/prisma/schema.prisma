@@ -7,14 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String    @id // This will now be the Auth0 user ID
-  email     String    @unique
-  snippets  Snippet[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-}
-
 model Snippet {
   id        String   @id @default(uuid())
   token     String   @unique
@@ -22,22 +14,7 @@ model Snippet {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   expiresAt DateTime
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id])
 
-  @@index([token])
-  @@index([expiresAt])
-  @@index([userId])
-}
-
-model Session {
-  id        String   @id @default(uuid())
-  userId    String
-  token     String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@index([userId])
   @@index([token])
   @@index([expiresAt])
 }
