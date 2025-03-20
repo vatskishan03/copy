@@ -19,7 +19,7 @@ const App = () => {
                     Welcome to ClipSync Pro
                   </h1>
                   <ClipboardHub />
-                  <div className="mt-8 p-4 bg-[#f8f3e9] dark:bg-slate-800 border border-amber-200 dark:border-slate-700 rounded-lg shadow-sm">
+                  <div className="mt-8 p-4 bg-[#f8f3e9] dark:bg-slate-800 border border-amber-200 dark:border-slate-700 rounded-lg shadow-sm md:col-span-3">
                     <h3 className="text-lg font-medium text-amber-900 dark:text-amber-200 mb-2">
                       How to use ClipSync Pro
                     </h3>

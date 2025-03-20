@@ -67,10 +67,18 @@
 }
 
 @layer base {
-  * {
-    @apply border-border;
+    .dark {
+      --background: 15 15% 15%; /* Darker background */
+      --foreground: 210 40% 98%; /* Lighter text */
+      --card: 20 20% 20%;
+      --card-foreground: 210 40% 98%;
+      --popover: 20 20% 20%;
+      --popover-foreground: 210 40% 98%;
+      --primary: 217.2 91.2% 59.8%;
+      --primary-foreground: 210 40% 98%;
+      --secondary: 217.2 32.6% 17.5%;
+      --secondary-foreground: 210 40% 98%;
+      --muted: 217.2 32.6% 17.5%;
+      --muted-foreground: 215 20.2% 65.1%;
+    }
   }
-  body {
-    @apply bg-background text-foreground;
-  }
-}

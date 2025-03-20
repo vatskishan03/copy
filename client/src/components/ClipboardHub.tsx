@@ -94,11 +94,16 @@ export default function ClipboardHub() {
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="Start typing here..."
+          placeholder="Enter your text here"
           className="w-full min-h-[400px] p-6 text-lg resize-none bg-white dark:bg-gray-800 border rounded-xl shadow-lg focus:ring-2 focus:ring-blue-500"
         />
+        <div className="mt-4">
+          <Button onClick={createClip} variant="primary" className="w-full">
+            Create
+          </Button>
+        </div>
       </div>
-
+  
       {/* Sidebar */}
       <div className="md:col-span-1 space-y-4">
         {/* Token Input */}
@@ -112,23 +117,19 @@ export default function ClipboardHub() {
               className="flex-1 p-2 border rounded"
             />
             <Button onClick={joinClip} variant="primary">
-              <Download className="h-4 w-4" />
+              Receive
             </Button>
           </div>
         </div>
-
+  
         {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-2">
-          <Button onClick={createClip} variant="primary">
-            <Plus className="mr-2 h-4 w-4" />
-            Create
-          </Button>
           <Button onClick={shareDocument} variant="secondary">
             <Share2 className="mr-2 h-4 w-4" />
             Share
           </Button>
         </div>
-
+  
         {/* Status */}
         {isSaving && (
           <p className="text-sm text-center text-gray-500 animate-pulse">
