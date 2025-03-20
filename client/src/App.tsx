@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ClipboardHub from './components/ClipboardHub';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
-import { ThemeProvider } from './components/providers/ThemeProvider';
+import { ThemeProvider } from './components/provider/ThemeProvider';
 
 const App = () => {
   return (

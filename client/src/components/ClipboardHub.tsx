@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useClipboard } from "../hooks/useClipboard";
-import { Button } from "./ui/Button";
+import  Button  from "./ui/Button";
 import { Copy, Share2, Plus, Download, RefreshCw, Users } from 'lucide-react';
 
 interface CollaboratorInfo {
