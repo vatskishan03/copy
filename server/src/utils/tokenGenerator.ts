@@ -1,12 +1,40 @@
-import crypto from 'crypto';
 import prisma from '../config/database';
 
-const TOKEN_LENGTH = 5;
+interface TokenPattern {
+  digits: string;
+  lowercase: string;
+  uppercase: string;
+  special: string;
+}
 
-export const generateToken = async (): Promise<string> => {
+const charSets: TokenPattern = {
+  digits: '0123456789',
+  lowercase: 'abcdefghijklmnopqrstuvwxyz',
+  uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+  special: '!@$&*()',
+};
+
+export const generateToken = async (length: number = 5): Promise<string> => {
+  const pattern = [
+    charSets.digits, 
+    charSets.digits,
+    charSets.lowercase, 
+    charSets.uppercase,
+    charSets.special
+  ];
+
   while (true) {
-    const token = crypto.randomBytes(TOKEN_LENGTH).toString('hex').slice(0, TOKEN_LENGTH);
-    const existingSnippet = await prisma.snippet.findUnique({ where: { token } });
+    let token = '';
+    for (const charSet of pattern) {
+      const randomIndex = Math.floor(Math.random() * charSet.length);
+      token += charSet.charAt(randomIndex);
+    }
+
+    // Ensure token is unique
+    const existingSnippet = await prisma.snippet.findUnique({
+      where: { token }
+    });
+
     if (!existingSnippet) {
       return token;
     }

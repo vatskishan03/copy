@@ -1,32 +1,20 @@
 import express from 'express';
-import { checkJwt } from '../middleware/auth';
-import { validateSnippetCreation, validateSnippetRetrieval, validateSnippetUpdate } from '../middleware/validators';
-import { handleValidationErrors } from '../middleware/errorHandler';
 import { snippetController } from '../controllers/snippetController';
+import { validateSnippetCreation, validateSnippetRetrieval } from '../middleware/validators';
+import { handleValidationErrors } from '../middleware/errorHandler';
 import { cacheMiddleware } from '../middlewares/cacheMiddleware';
 
 const router = express.Router();
 
-router.post(
-  '/',
-  checkJwt,
-  validateSnippetCreation,
-  handleValidationErrors,
-  snippetController.createSnippet
-);
-router.get(
-  '/:token',
-  validateSnippetRetrieval,
-  handleValidationErrors,
-  cacheMiddleware(60), // 1 minute cache
-  snippetController.getSnippet
-);
-router.put(
-  '/:token',
-  checkJwt,
-  validateSnippetUpdate,
-  handleValidationErrors,
-  snippetController.updateSnippet
-);
+router.post('/token', async (_req, res) => {
+  try {
+    const token = await generateToken();
+    res.json({ token, expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to generate token' });
+  }
+});
+
+// ... existing routes ...
 
 export default router;
