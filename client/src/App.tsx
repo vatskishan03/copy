@@ -28,7 +28,7 @@ const App = () => {
                       <li>Click <strong>Create</strong> to generate a unique token</li>
                       <li>Share the token with others</li>
                       <li>Others can paste the token and click <strong>Join</strong> to join your session</li>
-                      <li>All changes are saved automatically and synced between collaborators</li>
+                      <li>All changes are saved automatically and synced between collaborators in <strong>real-time</strong> </li>
                     </ol>
                   </div>
                 </div>

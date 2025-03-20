@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useClipboard } from "../hooks/useClipboard";
-import  Button  from "./ui/Button";
+import Button from "./ui/Button";
 import { Copy, Share2, Plus, Download, RefreshCw, Users } from 'lucide-react';
 
 interface CollaboratorInfo {
@@ -15,7 +15,8 @@ export default function ClipboardHub() {
   const [token, setToken] = useState("");
   const [collaborators, setCollaborators] = useState<CollaboratorInfo[]>([]);
   const [userId] = useState(`U${Math.floor(Math.random() * 100)}`);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [isJoining, setIsJoining] = useState(false); 
   const { copyToClipboard } = useClipboard();
   
   const { provider, connected } = useWebSocket(
@@ -26,7 +27,7 @@ export default function ClipboardHub() {
   // Create new clip
   const createClip = async () => {
     try {
-      setIsSaving(true);
+      setIsCreating(true);
       const response = await fetch("http://localhost:3001/api/snippets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -43,11 +44,11 @@ export default function ClipboardHub() {
       console.error("Failed to create clip:", error);
       alert("Failed to create clip");
     } finally {
-      setIsSaving(false);
+      setIsCreating(false);
     }
   };
 
-  // Join existing clip
+
   const joinClip = async () => {
     if (!token) {
       alert("Please enter a token");
@@ -55,7 +56,7 @@ export default function ClipboardHub() {
     }
 
     try {
-      setIsSaving(true);
+      setIsJoining(true);
       const response = await fetch(`http://localhost:3001/api/snippets/${token}`);
       const data = await response.json();
 
@@ -69,21 +70,30 @@ export default function ClipboardHub() {
       console.error("Failed to join clip:", error);
       alert("Failed to join clip");
     } finally {
-      setIsSaving(false);
+      setIsJoining(false);
     }
   };
 
-  const shareDocument = () => {
+  const shareDocument = async () => {
     if (!token) return;
 
+    // Use Web Share API if available
     if (navigator.share) {
-      navigator.share({
-        title: "ClipSync Pro Document",
-        text: `Join me on ClipSync Pro! Use token: ${token}`,
-        url: window.location.href,
-      });
+      try {
+        await navigator.share({
+          title: 'ClipSync Pro Token',
+          text: `Join my ClipSync Pro session with token: ${token}`,
+          url: window.location.href
+        });
+      } catch (error) {
+        // Fallback to clipboard if share was cancelled or failed
+        await copyToClipboard(token);
+        alert('Token copied to clipboard!');
+      }
     } else {
-      copyToClipboard(token);
+      // Fallback for browsers that don't support Web Share API
+      await copyToClipboard(token);
+      alert('Token copied to clipboard!');
     }
   };
 
@@ -97,44 +107,57 @@ export default function ClipboardHub() {
           placeholder="Enter your text here"
           className="w-full min-h-[400px] p-6 text-lg resize-none bg-white dark:bg-gray-800 border rounded-xl shadow-lg focus:ring-2 focus:ring-blue-500"
         />
-        <div className="mt-4">
-          <Button onClick={createClip} variant="primary" className="w-full">
-            Create
+        <div className="mt-4 flex justify-center">
+          <Button 
+            onClick={createClip} 
+            variant="primary" 
+            className="px-8"
+            disabled={isCreating}
+          >
+            {isCreating ? 'Creating...' : 'Create'}
           </Button>
         </div>
       </div>
-  
+
       {/* Sidebar */}
       <div className="md:col-span-1 space-y-4">
         {/* Token Input */}
         <div className="bg-white dark:bg-gray-800 border rounded-lg p-4 shadow-sm">
-          <div className="mb-3 font-medium">Enter Token</div>
+          <div className="mb-3 font-medium text-amber-900 dark:text-amber-200">
+            Enter Token
+          </div>
           <div className="flex gap-2">
             <input
               value={token}
               onChange={(e) => setToken(e.target.value.toUpperCase())}
               placeholder="Enter token"
-              className="flex-1 p-2 border rounded"
+              className="flex-1 p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
-            <Button onClick={joinClip} variant="primary">
-              Receive
+            <Button 
+              onClick={joinClip} 
+              variant="primary"
+              disabled={isJoining}
+            >
+              {isJoining ? 'Joining...' : 'Receive'}
             </Button>
           </div>
         </div>
-  
-        {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-2">
-          <Button onClick={shareDocument} variant="secondary">
-            <Share2 className="mr-2 h-4 w-4" />
-            Share
-          </Button>
-        </div>
-  
-        {/* Status */}
-        {isSaving && (
-          <p className="text-sm text-center text-gray-500 animate-pulse">
-            Saving changes...
-          </p>
+
+        {/* Show share options only when token exists */}
+        {token && (
+          <div className="bg-white dark:bg-gray-800 border rounded-lg p-4 shadow-sm">
+            <div className="mb-3 font-medium text-amber-900 dark:text-amber-200">
+              Share Token
+            </div>
+            <Button 
+              onClick={shareDocument} 
+              variant="secondary" 
+              className="w-full"
+            >
+              <Share2 className="mr-2 h-4 w-4" />
+              Share Token
+            </Button>
+          </div>
         )}
       </div>
     </div>
