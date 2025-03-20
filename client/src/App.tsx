@@ -4,8 +4,7 @@ import ClipboardArea from './components/ClipboardArea';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import TextEditor from './components/TextEditor';
-import QRCodeGenerator from './components/QRCodeGenerator';
-import RecentEntries from './components/RecentEntries';
+
 
 const App = () => {
   return (
@@ -17,7 +16,6 @@ const App = () => {
             <Route path="/" element={
               <div className="space-y-8">
                 <h1 className="text-3xl font-bold">Welcome to Clipboard</h1>
-                <RecentEntries />
                 <TextEditor />
               </div>
             } />

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import ClipboardEntry from './ClipboardEntry';
-import { useAuth0 } from '@auth0/auth0-react';
 
 interface ClipboardItem {
   id: string;
@@ -10,7 +9,6 @@ interface ClipboardItem {
 
 const ClipboardArea: React.FC = () => {
   const [clipboardItems, setClipboardItems] = useState<ClipboardItem[]>([]);
-  const { getAccessTokenSilently } = useAuth0();
 
   useEffect(() => {
     fetchClipboardItems();
@@ -18,17 +16,7 @@ const ClipboardArea: React.FC = () => {
 
   const fetchClipboardItems = async () => {
     try {
-      const token = await getAccessTokenSilently();
-      // Fetch clipboard items from your API
-      // const response = await fetch('YOUR_API_ENDPOINT', {
-      //   headers: {
-      //     Authorization: `Bearer ${token}`
-      //   }
-      // });
-      // const data = await response.json();
-      // setClipboardItems(data);
-      
-      // For now, let's use dummy data
+      // Replace this with your API call when ready.
       setClipboardItems([
         { id: '1', content: 'Sample clipboard item 1', timestamp: new Date() },
         { id: '2', content: 'Sample clipboard item 2', timestamp: new Date() },
@@ -40,14 +28,7 @@ const ClipboardArea: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      const token = await getAccessTokenSilently();
-      // Delete item from your API
-      // await fetch(`YOUR_API_ENDPOINT/${id}`, {
-      //   method: 'DELETE',
-      //   headers: {
-      //     Authorization: `Bearer ${token}`
-      //   }
-      // });
+      // Replace this section with an API call to delete the snippet if available.
       setClipboardItems(clipboardItems.filter(item => item.id !== id));
     } catch (error) {
       console.error('Error deleting clipboard item:', error);

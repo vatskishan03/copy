@@ -1,6 +1,5 @@
 import React from 'react';
 import { format } from 'date-fns';
-import QRCodeGenerator from './QRCodeGenerator';
 
 interface ClipboardItem {
   id: string;
@@ -40,9 +39,6 @@ const ClipboardEntry: React.FC<ClipboardEntryProps> = ({ item, onDelete }) => {
             Delete
           </button>
         </div>
-      </div>
-      <div className="mt-4">
-        <QRCodeGenerator value={item.content} />
       </div>
     </li>
   );

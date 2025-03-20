@@ -3,7 +3,6 @@ import * as Y from 'yjs';
 import { QuillBinding } from 'y-quill';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
-import { useAuth0 } from '@auth0/auth0-react';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 
@@ -12,7 +11,6 @@ const DOCUMENT_NAME = 'quill-demo';
 
 const TextEditor: React.FC = () => {
   const editorRef = useRef<HTMLDivElement>(null);
-  const { getAccessTokenSilently } = useAuth0();
   const { provider, connected } = useWebSocket(WEBSOCKET_ENDPOINT, DOCUMENT_NAME);
   const [lastEditedContent, setLastEditedContent] = useLocalStorage<string>('lastEditedContent', '');
 
@@ -35,16 +33,15 @@ const TextEditor: React.FC = () => {
 
     const binding = new QuillBinding(ytext, editor);
 
-    // Set initial content from localStorage if available
     if (lastEditedContent) {
       editor.setText(lastEditedContent);
     }
 
-    // Save content to localStorage on change
     editor.on('text-change', () => {
       setLastEditedContent(editor.getText());
     });
 
+    // Set local anonymity details
     const awareness = provider.awareness;
     awareness.setLocalStateField('user', {
       name: 'Anonymous',
@@ -56,14 +53,8 @@ const TextEditor: React.FC = () => {
     };
   }, [provider, lastEditedContent, setLastEditedContent]);
 
-  const handleSave = async () => {
-    try {
-      const token = await getAccessTokenSilently();
-      console.log('Saving document...');
-      // Here you would send the document state to your server
-    } catch (error) {
-      console.error('Error saving document:', error);
-    }
+  const handleSave = () => {
+    console.log('Saving document...');
   };
 
   return (
