@@ -19,7 +19,7 @@ export default function ClipboardHub() {
   const [isJoining, setIsJoining] = useState(false); 
   const { copyToClipboard } = useClipboard();
   
-  const { provider, connected } = useWebSocket(
+  const { connected } = useWebSocket(
     'ws://localhost:3001',
     token || 'default-room'
   );

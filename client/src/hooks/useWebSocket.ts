@@ -1,40 +1,134 @@
-import { useState, useEffect, useCallback } from 'react';
-import * as Y from 'yjs';
-import { WebsocketProvider } from 'y-websocket';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { io, Socket } from 'socket.io-client';
 
-export const useWebSocket = (
-  url: string, 
-  documentName: string
-) => {
-  const [provider, setProvider] = useState<WebsocketProvider | null>(null);
+interface CursorPosition {
+  userId: string;
+  position: number;
+}
+
+interface Selection {
+  userId: string;
+  start: number;
+  end: number;
+}
+
+interface ContentLoadPayload {
+  content: string;
+  collaborators: string[];
+}
+
+interface ContentUpdatePayload {
+  content: string;
+}
+
+interface CursorUpdatePayload {
+  userId: string;
+  position: number;
+}
+
+interface SelectionUpdatePayload {
+  userId: string;
+  selection: {
+    start: number;
+    end: number;
+  };
+}
+
+interface UserPayload {
+  userId: string;
+  count: number;
+}
+
+export const useWebSocket = (url: string, token: string) => {
+  const [socket, setSocket] = useState<Socket | null>(null); 
   const [connected, setConnected] = useState(false);
+  const [collaborators, setCollaborators] = useState<string[]>([]);
+  const [cursors, setCursors] = useState<CursorPosition[]>([]);
+  const [selections, setSelections] = useState<Selection[]>([]);
+  const contentRef = useRef('');
+
 
   useEffect(() => {
-    const ydoc = new Y.Doc();
-    const newProvider = new WebsocketProvider(url, documentName, ydoc);
+    if (!token) return;
 
-    newProvider.on('status', ({ status }: { status: string }) => {
-      setConnected(status === 'connected');
+    const newSocket = io(url);
+
+    newSocket.on('connect', () => {
+      setConnected(true);
+      newSocket.emit('join-room', token);
     });
 
-    setProvider(newProvider);
+    newSocket.on('disconnect', () => {
+      setConnected(false);
+    });
+
+    newSocket.on('content-load', ({ content, collaborators }: ContentLoadPayload) => {
+      contentRef.current = content;
+      setCollaborators(collaborators);
+    });
+
+    newSocket.on('content-updated', ({ content }: ContentUpdatePayload) => {
+      contentRef.current = content;
+    });
+
+    newSocket.on('cursor-update', ({ userId, position }: CursorUpdatePayload) => {
+      setCursors(prev => {
+        const filtered = prev.filter(c => c.userId !== userId);
+        return [...filtered, { userId, position }];
+      });
+    });
+
+    newSocket.on('selection-update', ({ userId, selection }: SelectionUpdatePayload) => {
+      setSelections(prev => {
+        const filtered = prev.filter(s => s.userId !== userId);
+        return [...filtered, { userId, ...selection }];
+      });
+    });
+
+    newSocket.on('user-joined', ({ userId, count }: UserPayload) => {
+      setCollaborators(prev => [...prev, userId]);
+    });
+
+    newSocket.on('user-left', ({ userId, count }: UserPayload) => {
+      setCollaborators(prev => prev.filter(id => id !== userId));
+      setCursors(prev => prev.filter(c => c.userId !== userId));
+      setSelections(prev => prev.filter(s => s.userId !== userId));
+    });
+
+    setSocket(newSocket);
 
     return () => {
-      newProvider.disconnect();
+      newSocket.disconnect();
     };
-  }, [url, documentName]);
+  }, [url, token]);
 
-  const disconnect = useCallback(() => {
-    if (provider) {
-      provider.disconnect();
+  const updateContent = useCallback((content: string, cursor?: number) => {
+    if (socket && connected) {
+      socket.emit('content-change', { token, content, cursor });
     }
-  }, [provider]);
+  }, [socket, connected, token]);
 
-  const connect = useCallback(() => {
-    if (provider) {
-      provider.connect();
+  const updateCursor = useCallback((position: number) => {
+    if (socket && connected) {
+      socket.emit('cursor-move', { token, position });
     }
-  }, [provider]);
+  }, [socket, connected, token]);
 
-  return { provider, connected, disconnect, connect };
+  const updateSelection = useCallback((start: number, end: number) => {
+    if (socket && connected) {
+      socket.emit('selection-change', { token, selection: { start, end } });
+    }
+  }, [socket, connected, token]);
+
+  return {
+    socket,
+    connected,
+    collaborators,
+    cursors,
+    selections,
+    updateContent,
+    updateCursor,
+    updateSelection,
+    content: contentRef.current
+  };
 };

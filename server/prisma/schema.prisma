@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
 }
 
 datasource db {
@@ -10,11 +11,14 @@ datasource db {
 model Snippet {
   id        String   @id @default(uuid())
   token     String   @unique
-  content   String
+  content   String   @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   expiresAt DateTime
+  lastAccessed DateTime @default(now())
+  viewCount    Int      @default(0)
 
   @@index([token])
   @@index([expiresAt])
+  @@index([lastAccessed])
 }
