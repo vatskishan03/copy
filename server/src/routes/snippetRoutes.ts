@@ -1,7 +1,6 @@
 import express from 'express';
 import { snippetController } from '../controllers/snippetController';
-import { validateSnippetCreation, validateSnippetRetrieval } from '../middlewares/inputvalidation';
-import { handleValidationErrors } from '../middlewares/errorHandler';
+import { validateSnippetCreation, validateSnippetRetrieval, handleValidationErrors } from '../middlewares/inputvalidation';
 import { cacheMiddleware } from '../middlewares/cacheMiddleware';
 
 const router = express.Router();
@@ -21,8 +20,7 @@ router.get('/:token',
   snippetController.getSnippet
 );
 
-
-// Update snippet (used by WebSocket service)
+// Update snippet 
 router.put('/:token',
   validateSnippetCreation,
   validateSnippetRetrieval,

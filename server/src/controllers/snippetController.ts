@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
-import { snippetService } from '../services/snippetService';
+import { SnippetService } from '../services/snippetService';
+import { prisma, redis } from '../config/database';
 import { logger } from '../config/logger';
+
+const snippetService = new SnippetService(prisma, redis);
 
 export const createSnippet = async (req: Request, res: Response) => {
   try {

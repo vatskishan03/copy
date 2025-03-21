@@ -1,4 +1,4 @@
-import prisma from '../config/database';
+import { prisma } from '../config/database';
 
 interface TokenPattern {
   digits: string;
@@ -30,7 +30,6 @@ export const generateToken = async (length: number = 5): Promise<string> => {
       token += charSet.charAt(randomIndex);
     }
 
-    
     const existingSnippet = await prisma.snippet.findUnique({
       where: { token }
     });

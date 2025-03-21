@@ -1,6 +1,7 @@
-import { PrismaClient } from '@prisma/client'
-import { Redis } from 'ioredis'
-import { logger } from './logger'
+import { Prisma, PrismaClient } from '@prisma/client';
+import { Redis, RedisOptions } from 'ioredis';
+import { logger } from './logger';
+import { TLSSocket } from 'tls';
 
 class DatabaseService {
   private static instance: DatabaseService;
@@ -13,61 +14,60 @@ class DatabaseService {
         { level: 'warn', emit: 'event' },
         { level: 'error', emit: 'event' },
         { level: 'info', emit: 'event' },
+        { level: 'query', emit: 'event' },
       ],
     });
 
-    this.redis = new Redis({
+    const redisConfig: RedisOptions = {
       host: process.env.REDIS_HOST,
       port: parseInt(process.env.REDIS_PORT || '18613'),
+      username: 'default',
       password: process.env.REDIS_PASSWORD,
-      tls: {}, 
       retryStrategy: (times) => {
-        const delay = Math.min(times * 50, 2000);
-        return delay;
+        if (times > 3) {
+          logger.error('Failed to connect to Redis after 3 retries');
+          return null;
+        }
+        return Math.min(times * 50, 2000);
       },
-      maxRetriesPerRequest: 3
-    });
+      enableOfflineQueue: true,
+      family: 4
+    };
+
+    this.redis = new Redis(redisConfig);
 
     this.setupEventHandlers();
   }
 
   private setupEventHandlers() {
     
-    this.prisma.$on('error', (e) => {
-      logger.error('Prisma Error:', e);
+    (this.prisma.$on as any)('query', (e: any) => {
+      logger.debug('Prisma Query:', e);
     });
-
-    this.prisma.$on('warn', (e) => {
-      logger.warn('Prisma Warning:', e);
-    });
-
-    this.prisma.$on('info', (e) => {
-      logger.info('Prisma Info:', e);
-    });
-
-    // Redis event handlers
+    
+    
     this.redis.on('error', (err) => {
       logger.error('Redis Error:', err);
     });
-
+    
     this.redis.on('connect', () => {
       logger.info('Redis connected successfully');
     });
-
+    
     this.redis.on('ready', () => {
       logger.info('Redis ready for operations');
     });
-
+    
     this.redis.on('reconnecting', () => {
       logger.warn('Redis reconnecting...');
     });
-
-    // Cleanup on application shutdown
+    
+ 
     process.on('SIGINT', async () => {
       await this.cleanup();
       process.exit(0);
     });
-
+    
     process.on('SIGTERM', async () => {
       await this.cleanup();
       process.exit(0);
@@ -79,38 +79,33 @@ class DatabaseService {
     await this.prisma.$disconnect();
     await this.redis.quit();
   }
-
+  
   public static getInstance(): DatabaseService {
     if (!DatabaseService.instance) {
       DatabaseService.instance = new DatabaseService();
     }
     return DatabaseService.instance;
   }
-
+  
   public async checkConnections(): Promise<boolean> {
     try {
-      // Check Prisma connection
       await this.prisma.$queryRaw`SELECT 1`;
-      
-      // Check Redis connection
       await this.redis.ping();
-      
       return true;
     } catch (error) {
       logger.error('Connection check failed:', error);
       return false;
     }
   }
-
+  
   public getPrisma(): PrismaClient {
     return this.prisma;
   }
-
+  
   public getRedis(): Redis {
     return this.redis;
   }
 }
-
 
 const dbService = DatabaseService.getInstance();
 export const prisma = dbService.getPrisma();
