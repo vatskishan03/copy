@@ -30,7 +30,7 @@ export const generateToken = async (length: number = 5): Promise<string> => {
       token += charSet.charAt(randomIndex);
     }
 
-    // Ensure token is unique
+    
     const existingSnippet = await prisma.snippet.findUnique({
       where: { token }
     });
