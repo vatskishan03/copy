@@ -16,10 +16,9 @@ export const cacheMiddleware = (ttlSeconds = 300) => {
         return res.json(JSON.parse(cachedData));
       }
       
-      // Store original res.json method
+      
       const originalJson = res.json;
       
-      // Override res.json method
       res.json = function(body) {
         redis.setex(cacheKey, ttlSeconds, JSON.stringify(body));
         logger.debug(`Cache set for ${cacheKey}`);

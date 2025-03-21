@@ -5,7 +5,7 @@ import { logger } from '../config/logger';
 export class WebSocketService {
   private rooms: Map<string, Set<Socket>> = new Map();
   private contentBuffers: Map<string, string> = new Map();
-  private updateTimeouts: Map<string, NodeJS.Timeout> = new Map(); 
+  private updateTimeouts: Map<string, NodeJS.Timeout> = new Map();
 
   constructor(
     private io: Server,
@@ -19,30 +19,25 @@ export class WebSocketService {
     this.io.on('connection', (socket: Socket) => {
       logger.info(`Client connected: ${socket.id}`);
 
-      // Handle real-time content updates with debouncing
       socket.on('content-change', async ({ token, content, cursor }) => {
         try {
-          // Store content in buffer
           this.contentBuffers.set(token, content);
 
-          // Clear existing timeout
           const existingTimeout = this.updateTimeouts.get(token);
           if (existingTimeout) {
             clearTimeout(existingTimeout);
           }
 
-          // Set new timeout for debounced update
           const timeout = setTimeout(async () => {
             const bufferedContent = this.contentBuffers.get(token);
             if (bufferedContent !== undefined) {
               await this.handleContentUpdate(token, bufferedContent);
               this.contentBuffers.delete(token);
             }
-          }, 1000); // 1 second debounce
+          }, 1000);
 
           this.updateTimeouts.set(token, timeout);
 
-          // Broadcast cursor position immediately
           socket.broadcast.to(token).emit('cursor-update', {
             userId: socket.id,
             cursor
@@ -51,22 +46,6 @@ export class WebSocketService {
           logger.error('Error in content-change:', error);
           socket.emit('error', { message: 'Failed to sync changes' });
         }
-      });
-
-      // Handle cursor position updates
-      socket.on('cursor-move', ({ token, position }) => {
-        socket.broadcast.to(token).emit('cursor-update', {
-          userId: socket.id,
-          position
-        });
-      });
-
-      // Handle selection updates
-      socket.on('selection-change', ({ token, selection }) => {
-        socket.broadcast.to(token).emit('selection-update', {
-          userId: socket.id,
-          selection
-        });
       });
 
       socket.on('join-room', async (token: string) => {
@@ -91,18 +70,12 @@ export class WebSocketService {
 
       socket.on('disconnect', () => {
         this.handleDisconnect(socket);
-        logger.info(`Client disconnected: ${socket.id}`);
       });
     });
   }
 
   private joinRoom(socket: Socket, token: string) {
-    // Leave previous rooms
-    this.rooms.forEach(sockets => {
-      sockets.delete(socket);
-    });
-
-    // Join new room
+    this.rooms.forEach(sockets => sockets.delete(socket));
     socket.join(token);
     
     if (!this.rooms.has(token)) {
@@ -111,8 +84,6 @@ export class WebSocketService {
     this.rooms.get(token)?.add(socket);
 
     const roomSize = this.rooms.get(token)?.size || 0;
-    
-    // Notify all room members including the new one
     this.io.to(token).emit('user-joined', {
       userId: socket.id,
       count: roomSize
@@ -123,13 +94,8 @@ export class WebSocketService {
 
   private async handleContentUpdate(token: string, content: string) {
     try {
-      // Update in database
       await this.snippetService.updateSnippet(token, content);
-      
-      // Broadcast to all clients in room except sender
       this.io.to(token).emit('content-updated', { content });
-      
-      logger.debug(`Content updated in room ${token}`);
     } catch (error) {
       logger.error('Error updating content:', error);
       throw error;
@@ -147,29 +113,22 @@ export class WebSocketService {
           count: roomSize
         });
 
-        logger.info(`User ${socket.id} left room ${token}. Total users: ${roomSize}`);
-        
-        // Clean up empty rooms
         if (roomSize === 0) {
           this.cleanupRoom(token);
-          logger.info(`Room ${token} removed as it's empty`);
         }
       }
     });
+    logger.info(`Client disconnected: ${socket.id}`);
   }
 
   private cleanupRoom(token: string) {
-    // Clear any pending timeouts
     const timeout = this.updateTimeouts.get(token);
     if (timeout) {
       clearTimeout(timeout);
       this.updateTimeouts.delete(token);
     }
-
-    // Clear content buffer
     this.contentBuffers.delete(token);
-
-    // Remove room
     this.rooms.delete(token);
+    logger.info(`Room ${token} cleaned up`);
   }
 }
