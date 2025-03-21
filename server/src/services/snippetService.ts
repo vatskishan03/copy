@@ -9,15 +9,10 @@ export class SnippetService {
   ) {}
 
   async createSnippet(content: string): Promise<{ token: string }> {
-    const token = generateToken();
+  
+    const token = await generateToken(5);
     
-    // First try to get from cache
-    const cachedToken = await this.redis.get(`snippet:${token}`);
-    if (cachedToken) {
-      return this.createSnippet(content); // Regenerate if token exists
-    }
-
-    // Create in DB
+    // Create snippet in DB
     const snippet = await this.prisma.snippet.create({
       data: {
         token,
@@ -26,10 +21,10 @@ export class SnippetService {
       }
     });
 
-    // Cache the new snippet
+    // Cache the snippet
     await this.redis.setex(
       `snippet:${token}`,
-      24 * 60 * 60, // 24 hours
+      24 * 60 * 60,
       JSON.stringify(snippet)
     );
 
@@ -40,7 +35,13 @@ export class SnippetService {
     // Try cache first
     const cached = await this.redis.get(`snippet:${token}`);
     if (cached) {
-      return JSON.parse(cached);
+      // Update last accessed time
+      const snippet = JSON.parse(cached);
+      await this.prisma.snippet.update({
+        where: { token },
+        data: { lastAccessed: new Date() }
+      });
+      return snippet;
     }
 
     // Fallback to DB
@@ -49,7 +50,12 @@ export class SnippetService {
     });
 
     if (snippet) {
-      // Cache for subsequent requests
+      // Update last accessed time and cache
+      await this.prisma.snippet.update({
+        where: { token },
+        data: { lastAccessed: new Date() }
+      });
+      
       await this.redis.setex(
         `snippet:${token}`,
         24 * 60 * 60,
@@ -61,10 +67,13 @@ export class SnippetService {
   }
 
   async updateSnippet(token: string, content: string) {
-    // Update DB
+    // Update in DB
     const updated = await this.prisma.snippet.update({
       where: { token },
-      data: { content }
+      data: { 
+        content,
+        lastAccessed: new Date()
+      }
     });
 
     // Update cache

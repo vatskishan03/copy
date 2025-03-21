@@ -1,6 +1,6 @@
-// server/src/middlewares/cacheMiddleware.ts
 import { Request, Response, NextFunction } from 'express';
-import redisClient from '../config/redis.ts';
+import { redis } from '../config/database';
+import { logger } from '../config/logger';
 
 export const cacheMiddleware = (ttlSeconds = 300) => {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -10,23 +10,25 @@ export const cacheMiddleware = (ttlSeconds = 300) => {
     const cacheKey = `cache:${req.originalUrl}`;
     
     try {
-      const cachedData = await redisClient.get(cacheKey);
+      const cachedData = await redis.get(cacheKey);
       if (cachedData) {
+        logger.debug(`Cache hit for ${cacheKey}`);
         return res.json(JSON.parse(cachedData));
       }
       
       // Store original res.json method
-      const originalSend = res.json;
+      const originalJson = res.json;
       
       // Override res.json method
       res.json = function(body) {
-        redisClient.setex(cacheKey, ttlSeconds, JSON.stringify(body));
-        return originalSend.call(this, body);
+        redis.setex(cacheKey, ttlSeconds, JSON.stringify(body));
+        logger.debug(`Cache set for ${cacheKey}`);
+        return originalJson.call(this, body);
       };
       
       next();
     } catch (error) {
-      console.error('Cache error:', error);
+      logger.error('Cache middleware error:', error);
       next();
     }
   };

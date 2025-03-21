@@ -6,6 +6,7 @@ import { SnippetService } from './services/snippetService';
 import { WebSocketService } from './services/websocketService';
 import { prisma, redis } from './config/database';
 import snippetRoutes from './routes/snippetRoutes';
+import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
 
 const app = express();
 const server = http.createServer(app);
@@ -30,6 +31,11 @@ app.use(express.json());
 app.use('/api/snippets', snippetRoutes);
 
 const PORT = process.env.PORT || 3001;
+
+// Error handling
+app.use(notFoundHandler);
+app.use(errorHandler);
+
 
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
