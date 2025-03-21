@@ -15,7 +15,7 @@ export const createSnippet = async (req: Request, res: Response) => {
 
 export const getSnippet = async (req: Request, res: Response) => {
   try {
-    const { token } = req.params; // Changed from id to token
+    const { token } = req.params; 
     const snippet = await snippetService.getSnippet(token);
     if (!snippet) {
       return res.status(404).json({ error: 'Snippet not found' });
@@ -29,7 +29,7 @@ export const getSnippet = async (req: Request, res: Response) => {
 
 export const updateSnippet = async (req: Request, res: Response) => {
   try {
-    const { token } = req.params; // Changed from id to token
+    const { token } = req.params; 
     const { content } = req.body;
     const updatedSnippet = await snippetService.updateSnippet(token, content);
     res.json(updatedSnippet);

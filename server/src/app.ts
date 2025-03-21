@@ -10,12 +10,18 @@ import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
 import { validateEnv } from './env';
 import { logger } from './config/logger';
 import compression from 'compression';
+import { CleanupService } from './services/cleanupService';
 
 
 const env = validateEnv();
 
+const cleanupService = new CleanupService(prisma, redis);
 const app = express();
 const server = http.createServer(app);
+
+setInterval(() => {
+  cleanupService.cleanupExpiredSnippets();
+}, 60 * 60 * 5000); 
 
 const io = new Server(server, {
   cors: {

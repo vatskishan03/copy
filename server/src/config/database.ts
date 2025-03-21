@@ -17,15 +17,15 @@ class DatabaseService {
     });
 
     this.redis = new Redis({
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379'),
+      host: process.env.REDIS_HOST,
+      port: parseInt(process.env.REDIS_PORT || '18613'),
       password: process.env.REDIS_PASSWORD,
-      maxRetriesPerRequest: 3,
+      tls: {}, 
       retryStrategy: (times) => {
         const delay = Math.min(times * 50, 2000);
         return delay;
       },
-      enableReadyCheck: true,
+      maxRetriesPerRequest: 3
     });
 
     this.setupEventHandlers();
