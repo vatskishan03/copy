@@ -1,40 +1,79 @@
-import prisma from '../config/database';
+import { PrismaClient } from '@prisma/client';
+import { Redis } from 'ioredis';
 import { generateToken } from '../utils/tokenGenerator';
 
-export const createSnippet = async (content: string) => {
-  const token = await generateToken();
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+export class SnippetService {
+  constructor(
+    private prisma: PrismaClient,
+    private redis: Redis
+  ) {}
 
-  const snippet = await prisma.snippet.create({
-    data: {
-      content,
-      token,
-      expiresAt,
-    },
-  });
+  async createSnippet(content: string): Promise<{ token: string }> {
+    const token = generateToken();
+    
+    // First try to get from cache
+    const cachedToken = await this.redis.get(`snippet:${token}`);
+    if (cachedToken) {
+      return this.createSnippet(content); // Regenerate if token exists
+    }
 
-  return snippet;
-};
-
-export const getSnippet = async (token: string) => {
-  const snippet = await prisma.snippet.findUnique({
-    where: { token }
-  });
-  
-  if (!snippet) return null;
-  
-  // Check if snippet has expired
-  if (snippet.expiresAt < new Date()) {
-    await prisma.snippet.delete({
-      where: { id: snippet.id }
+    // Create in DB
+    const snippet = await this.prisma.snippet.create({
+      data: {
+        token,
+        content,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+      }
     });
-    return null;
+
+    // Cache the new snippet
+    await this.redis.setex(
+      `snippet:${token}`,
+      24 * 60 * 60, // 24 hours
+      JSON.stringify(snippet)
+    );
+
+    return { token };
   }
 
-  return snippet;
-};
+  async getSnippet(token: string) {
+    // Try cache first
+    const cached = await this.redis.get(`snippet:${token}`);
+    if (cached) {
+      return JSON.parse(cached);
+    }
 
-export const snippetService = {
-  createSnippet,
-  getSnippet,
-};
+    // Fallback to DB
+    const snippet = await this.prisma.snippet.findUnique({
+      where: { token }
+    });
+
+    if (snippet) {
+      // Cache for subsequent requests
+      await this.redis.setex(
+        `snippet:${token}`,
+        24 * 60 * 60,
+        JSON.stringify(snippet)
+      );
+    }
+
+    return snippet;
+  }
+
+  async updateSnippet(token: string, content: string) {
+    // Update DB
+    const updated = await this.prisma.snippet.update({
+      where: { token },
+      data: { content }
+    });
+
+    // Update cache
+    await this.redis.setex(
+      `snippet:${token}`, 
+      24 * 60 * 60,
+      JSON.stringify(updated)
+    );
+
+    return updated;
+  }
+}

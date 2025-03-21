@@ -1,69 +1,73 @@
-import { Server as HttpServer } from 'http';
-import { Server as SocketIOServer, Socket } from 'socket.io';
-import * as Y from 'yjs';
-import { WebsocketProvider } from 'y-websocket';
-import { decrypt, encrypt } from '../utils/encryption';
+import { Server, Socket } from 'socket.io';
+import { SnippetService } from './snippetService';
 
 export class WebSocketService {
-  private io: SocketIOServer;
-  private rooms: Map<string, Y.Doc> = new Map();
+  private rooms: Map<string, Set<Socket>> = new Map();
 
-  constructor(server: HttpServer) {
-    this.io = new SocketIOServer(server, {
-      cors: {
-        origin: process.env.CLIENT_URL || 'http://localhost:3000',
-        methods: ['GET', 'POST'],
-      },
+  constructor(
+    private io: Server,
+    private snippetService: SnippetService
+  ) {
+    this.setupSocketHandlers();
+  }
+
+  private setupSocketHandlers() {
+    this.io.on('connection', (socket: Socket) => {
+      console.log('Client connected:', socket.id);
+
+      socket.on('join-room', (token: string) => {
+        this.joinRoom(socket, token);
+      });
+
+      socket.on('content-update', async ({ token, content }) => {
+        await this.handleContentUpdate(token, content);
+      });
+
+      socket.on('disconnect', () => {
+        this.handleDisconnect(socket);
+      });
+    });
+  }
+
+  private joinRoom(socket: Socket, token: string) {
+    // Remove from previous rooms
+    this.rooms.forEach(sockets => {
+      sockets.delete(socket);
     });
 
-    this.io.on('connection', this.handleConnection.bind(this));
-  }
-
-  private handleConnection(socket: Socket) {
-    console.log('New client connected');
-
-    socket.on('join-room', (roomId: string) => this.handleJoinRoom(socket, roomId));
-    socket.on('leave-room', (roomId: string) => this.handleLeaveRoom(socket, roomId));
-    socket.on('disconnect', () => this.handleDisconnect(socket));
-  }
-
-  private handleJoinRoom(socket: Socket, roomId: string) {
-    socket.join(roomId);
-    console.log(`Client joined room: ${roomId}`);
-
-    if (!this.rooms.has(roomId)) {
-      const doc = new Y.Doc();
-      this.rooms.set(roomId, doc);
-
-      new WebsocketProvider(`ws://localhost:${process.env.PORT}`, roomId, doc);
+    // Join new room
+    socket.join(token);
+    
+    if (!this.rooms.has(token)) {
+      this.rooms.set(token, new Set());
     }
+    this.rooms.get(token)?.add(socket);
 
-    const doc = this.rooms.get(roomId)!;
-    const encryptedContent = doc.getText('content').toString();
-    const decryptedContent = decrypt(encryptedContent);
-
-    socket.emit('initial-content', decryptedContent);
+    // Notify room members
+    this.io.to(token).emit('user-joined', {
+      userId: socket.id,
+      count: this.rooms.get(token)?.size || 0
+    });
   }
 
-  private handleLeaveRoom(socket: Socket, roomId: string) {
-    socket.leave(roomId);
-    console.log(`Client left room: ${roomId}`);
+  private async handleContentUpdate(token: string, content: string) {
+    try {
+      await this.snippetService.updateSnippet(token, content);
+      this.io.to(token).emit('content-updated', { token, content });
+    } catch (error) {
+      console.error('Error updating content:', error);
+    }
   }
 
   private handleDisconnect(socket: Socket) {
-    console.log('Client disconnected');
+    this.rooms.forEach((sockets, token) => {
+      if (sockets.has(socket)) {
+        sockets.delete(socket);
+        this.io.to(token).emit('user-left', {
+          userId: socket.id,
+          count: sockets.size
+        });
+      }
+    });
   }
-
-  public async updateContent(roomId: string, content: string) {
-    const doc = this.rooms.get(roomId);
-    if (doc) {
-      const encryptedContent = encrypt(content);
-      doc.getText('content').delete(0, doc.getText('content').length);
-      doc.getText('content').insert(0, encryptedContent);
-    }
-  }
-public async notifySnippetDeleted(snippetId: string) {
-  this.io.to(snippetId).emit('snippet-deleted', snippetId);
-  this.rooms.delete(snippetId);
-}
 }
