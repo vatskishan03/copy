@@ -1,31 +1,33 @@
 import express from 'express';
 import http from 'http';
 import cors from 'cors';
+import { Server } from 'socket.io';
+import { SnippetService } from './services/snippetService';
+import { WebSocketService } from './services/websocketService';
+import { prisma, redis } from './config/database';
 import snippetRoutes from './routes/snippetRoutes';
-import { initializeWebSocket } from './services/websocketService';
-import { standardLimiter, apiLimiter } from './middlewares/rateLimiter';
 
 const app = express();
 const server = http.createServer(app);
 
+// Initialize Socket.io with CORS
+const io = new Server(server, {
+  cors: {
+    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    methods: ['GET', 'POST']
+  }
+});
+
+// Initialize services
+const snippetService = new SnippetService(prisma, redis);
+const webSocketService = new WebSocketService(io, snippetService);
+
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(standardLimiter);
 
 // Routes
 app.use('/api/snippets', snippetRoutes);
-
-// Initialize WebSocket
-const io = initializeWebSocket(server);
-
-app.use('/api/', apiLimiter);
-
-// Error handling middleware
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err.stack);
-  res.status(500).send('Something broke!');
-});
 
 const PORT = process.env.PORT || 3001;
 
@@ -34,4 +36,3 @@ server.listen(PORT, () => {
 });
 
 export { app, server, io };
-export const webSocketService = new WebSocketService(server);
