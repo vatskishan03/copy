@@ -15,20 +15,17 @@ const App = () => {
             <Routes>
               <Route path="/" element={
                 <div className="space-y-8">
-                  <h1 className="text-3xl font-bold text-amber-900 dark:text-amber-200">
-                    Welcome to ClipSync Pro
-                  </h1>
                   <ClipboardHub />
                   <div className="mt-8 p-4 bg-[#f8f3e9] dark:bg-slate-800 border border-amber-200 dark:border-slate-700 rounded-lg shadow-sm md:col-span-3">
                     <h3 className="text-lg font-medium text-amber-900 dark:text-amber-200 mb-2">
-                      How to use ClipSync Pro
+                      How to use CopyIt
                     </h3>
                     <ol className="list-decimal list-inside space-y-2 text-amber-800 dark:text-amber-300">
                       <li>Enter your text in the editor</li>
                       <li>Click <strong>Create</strong> to generate a unique token</li>
                       <li>Share the token with others</li>
                       <li>Others can paste the token and click <strong>Receive</strong> to join your session</li>
-                      <li>All changes are saved automatically and synced between collaborators in <strong>real-time</strong> </li>
+                      <li>You can <strong>collaborate</strong> with others and edit the text (like google docs) in <strong>real-time</strong> </li>
                     </ol>
                   </div>
                 </div>

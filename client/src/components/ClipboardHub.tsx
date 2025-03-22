@@ -109,7 +109,7 @@ export default function ClipboardHub() {
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Enter your text here to create a new document"
+            placeholder="Enter your text here"
             className="w-full min-h-[400px] p-6 text-lg resize-none bg-white dark:bg-gray-800 border rounded-xl shadow-lg focus:ring-2 focus:ring-blue-500 dark:text-white"
           />
           <div className="mt-4 flex flex-col items-center space-y-4">
@@ -182,6 +182,15 @@ export default function ClipboardHub() {
               onChange={handleContentChange}
               className="w-full min-h-[400px] p-6 text-lg resize-none bg-white dark:bg-gray-800 border rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white"
             />
+            <div className="mt-4 flex justify-end">
+            <Button 
+                onClick={() => window.location.reload()}
+                variant="primary"
+                className="px-4 py-2 bg-blue-500 text-white hover:bg-blue-600"
+                >
+                Create again
+            </Button>
+            </div>
           </div>
         </div>
       )}
