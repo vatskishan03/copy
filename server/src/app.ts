@@ -22,7 +22,7 @@ const snippetService = new SnippetService(prisma, redis);
 const cleanupService = new CleanupService(prisma, redis);
 const io = new Server(server, {
   cors: {
-    origin: env.CLIENT_URL,
+    origin: env.CLIENT_URL ,
     methods: ['GET', 'POST']
   },
   pingTimeout: 60000,

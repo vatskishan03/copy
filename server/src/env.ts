@@ -10,6 +10,7 @@ interface EnvVars {
   NODE_ENV: 'development' | 'production';
 }
 
+const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
 const requiredEnvVars: (keyof EnvVars)[] = [
   'DATABASE_URL',
   'REDIS_HOST',
@@ -34,7 +35,7 @@ export function validateEnv(): EnvVars {
     REDIS_PORT: process.env.REDIS_PORT!,
     REDIS_PASSWORD: process.env.REDIS_PASSWORD,
     PORT: process.env.PORT!,
-    CLIENT_URL: process.env.CLIENT_URL!,
+    CLIENT_URL: clientUrl, 
     NODE_ENV: (process.env.NODE_ENV as 'development' | 'production') || 'development'
   };
 }
