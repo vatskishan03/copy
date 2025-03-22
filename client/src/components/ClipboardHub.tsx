@@ -3,6 +3,7 @@ import { useWebSocket } from "../hooks/useWebSocket";
 import { useClipboard } from "../hooks/useClipboard";
 import Button from "./ui/Button";
 import { Copy, Check, Users } from 'lucide-react';
+import { API_BASE_URL } from "../utils/api";
 
 export default function ClipboardHub() {
   const [content, setContent] = useState("");
@@ -60,7 +61,7 @@ export default function ClipboardHub() {
   const createClip = async () => {
     try {
       setIsCreating(true);
-      const response = await fetch("http://localhost:3001/api/snippets", {
+      const response = await fetch(`${API_BASE_URL}/snippets`,  {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content }),
@@ -84,7 +85,7 @@ export default function ClipboardHub() {
     }
     try {
       setIsJoining(true);
-      const response = await fetch(`http://localhost:3001/api/snippets/${inputToken}`);
+      const response = await fetch(`${API_BASE_URL}/snippets/${inputToken}`);
       const data = await response.json();
       if (response.ok && data.content) {
         setContent(data.content);
@@ -222,3 +223,4 @@ export default function ClipboardHub() {
     </div>
   );
 }
+export { API_BASE_URL };

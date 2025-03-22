@@ -1,4 +1,4 @@
-export {}; const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = process.env.APP_API_URL || 'http://localhost:3001/api';
 
 export const api = {
   createSnippet: async (content: string) => {
@@ -9,12 +9,10 @@ export const api = {
     });
     return response.json();
   },
-
   getSnippet: async (token: string) => {
     const response = await fetch(`${API_BASE_URL}/snippets/${token}`);
     return response.json();
   },
-
   generateToken: async () => {
     const response = await fetch(`${API_BASE_URL}/snippets/token`, {
       method: 'POST',
