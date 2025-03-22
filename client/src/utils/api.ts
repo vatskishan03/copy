@@ -20,3 +20,4 @@ export const api = {
     return response.json();
   },
 };
+export { API_BASE_URL };
