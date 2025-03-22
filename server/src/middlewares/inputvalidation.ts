@@ -12,7 +12,7 @@ export const validateSnippetRetrieval = [
   param('token')
     .trim()
     .isLength({ min: 5, max: 5 }).withMessage('Token must be exactly 5 characters')
-    .matches(/^[A-Z0-9!@$&*()]+$/).withMessage('Token contains invalid characters'),
+    .matches(/^[A-Za-z0-9!@$&*()]+$/).withMessage('Token contains invalid characters'),
 ];
 
 export const handleValidationErrors = (req: Request, res: Response, next: NextFunction) => {
