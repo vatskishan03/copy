@@ -2,7 +2,7 @@ import express from 'express';
 import http from 'http';
 import cors from 'cors';
 import { Server } from 'socket.io';
-import { SnippetService } from './services/snippetService'; // Changed from snippetService to SnippetService
+import { SnippetService } from './services/snippetService'; 
 import { WebSocketService } from './services/websocketService';
 import { prisma, redis } from './config/database';
 import snippetRoutes from './routes/snippetRoutes';
@@ -20,9 +20,34 @@ const server = http.createServer(app);
 // Initialize services
 const snippetService = new SnippetService(prisma, redis);
 const cleanupService = new CleanupService(prisma, redis);
+
+const allowedOrigins = [
+  env.CLIENT_URL,            
+  'http://localhost:3000'    
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      return callback(null, true);
+    } else {
+      return callback(new Error(`Origin ${origin} not allowed by CORS`));
+    }
+  },
+  optionsSuccessStatus: 200
+}));
+
 const io = new Server(server, {
   cors: {
-    origin: env.CLIENT_URL ,
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        return callback(null, true);
+      } else {
+        return callback(new Error(`Origin ${origin} not allowed by WebSocket CORS`));
+      }
+    },
     methods: ['GET', 'POST']
   },
   pingTimeout: 60000,
@@ -31,31 +56,17 @@ const io = new Server(server, {
 
 const webSocketService = new WebSocketService(io, snippetService);
 
-// Setup cleanup interval
 setInterval(() => {
   cleanupService.cleanupExpiredSnippets();
 }, 60 * 60 * 5000);
 
-// Middleware
-app.use(cors({
-  origin: env.CLIENT_URL,
-  optionsSuccessStatus: 200
-}));
+
 app.use(express.json());
 app.use(compression());
 
-// Routes
-app.get('/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
-});
 
-app.use('/api/snippets', snippetRoutes);
-
-// Error handling
 app.use(notFoundHandler);
-app.use(errorHandler);
 
-// Start server
 const PORT = env.PORT;
 server.listen(PORT, () => {
   logger.info(`Server running in ${env.NODE_ENV} mode on port ${PORT}`);

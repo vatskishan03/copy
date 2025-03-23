@@ -4,6 +4,7 @@ import { useClipboard } from "../hooks/useClipboard";
 import Button from "./ui/Button";
 import { Copy, Check, Users } from 'lucide-react';
 import { API_BASE_URL } from "../utils/api";
+import { WEBSOCKET_URL } from "../utils/api";
 
 export default function ClipboardHub() {
   const [content, setContent] = useState("");
@@ -23,10 +24,10 @@ export default function ClipboardHub() {
 
  
   const { connected, collaborators, updateContent } = useWebSocket(
-    'ws://localhost:3001',
+    WEBSOCKET_URL,
     roomToken,
     onContentUpdate
-  );
+);
 
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newContent = e.target.value;
