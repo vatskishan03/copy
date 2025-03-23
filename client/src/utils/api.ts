@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.APP_API_URL || 'http://localhost:3001/api';
+export const API_BASE_URL = process.env.APP_API_URL || 'http://localhost:3001/api';
 
 export const WEBSOCKET_URL = process.env.APP_WEBSOCKET_URL || 'ws://localhost:3001';
 export const api = {
@@ -21,4 +21,3 @@ export const api = {
     return response.json();
   },
 };
-export { API_BASE_URL };

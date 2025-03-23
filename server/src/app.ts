@@ -64,7 +64,7 @@ setInterval(() => {
 app.use(express.json());
 app.use(compression());
 
-
+app.use('/api/snippets', snippetRoutes);
 app.use(notFoundHandler);
 
 const PORT = env.PORT;
