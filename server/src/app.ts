@@ -65,15 +65,16 @@ setInterval(() => {
 app.use(express.json());
 app.use(compression());
 
-app.use('/api/snippets', snippetRoutes);
-app.use(notFoundHandler);
-
 app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'Backend is running', 
     timestamp: new Date().toISOString() 
   });
 });
+
+app.use('/api/snippets', snippetRoutes);
+app.use(notFoundHandler);
+
 
 const PORT = env.PORT;
 server.listen(PORT, () => {
