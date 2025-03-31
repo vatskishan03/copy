@@ -88,8 +88,8 @@ export default function ClipboardHub() {
       setIsJoining(true);
       const response = await fetch(`${API_BASE_URL}/snippets/${inputToken}`);
       const data = await response.json();
-      if (response.ok && data.content) {
-        setContent(data.content);
+      if (response.ok) {
+        setContent(data.content || '');
         setIsEditing(true);
         setRoomToken(inputToken);  
       } else {
