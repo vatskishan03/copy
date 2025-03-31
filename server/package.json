@@ -3,13 +3,14 @@
   "version": "1.0.0",
   "main": "app.js",
   "scripts": {
-    "start": "node dist/app.js",
-    "dev": "nodemon src/app.ts",
-    "build": "tsc",
-    "db:migrate": "prisma migrate dev",
-    "db:deploy": "prisma migrate deploy",
-    "db:seed": "ts-node prisma/seed.ts",
-    "db:reset": "prisma migrate reset"
+   "start": "node dist/app.js",
+  "dev": "nodemon src/app.ts",
+  "prebuild": "npm install -g typescript && npm install && npx prisma generate",
+  "build": "tsc",
+  "db:migrate": "prisma migrate dev",
+  "db:deploy": "prisma migrate deploy",
+  "db:seed": "ts-node prisma/seed.ts",
+  "db:reset": "prisma migrate reset"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
