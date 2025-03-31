@@ -1,6 +1,6 @@
-export const API_BASE_URL = process.env.APP_API_URL || 'http://localhost:3001/api';
+export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+export const WEBSOCKET_URL = process.env.REACT_APP_WEBSOCKET_URL || 'ws://localhost:3001';
 
-export const WEBSOCKET_URL = process.env.APP_WEBSOCKET_URL || 'ws://localhost:3001';
 export const api = {
   createSnippet: async (content: string) => {
     const response = await fetch(`${API_BASE_URL}/snippets`, {
