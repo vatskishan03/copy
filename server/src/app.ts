@@ -22,20 +22,21 @@ const snippetService = new SnippetService(prisma, redis);
 const cleanupService = new CleanupService(prisma, redis);
 
 const allowedOrigins = [
-  env.CLIENT_URL,            
-  'http://localhost:3000'    
+  "https://copyit-three.vercel.app",
+  "http://localhost:3000"
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      return callback(null, true);
+    // Allow requests with no origin or an allowed origin
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
     } else {
-      return callback(new Error(`Origin ${origin} not allowed by CORS`));
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
     }
   },
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  credentials: true
 }));
 
 const io = new Server(server, {
