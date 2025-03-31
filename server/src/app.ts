@@ -70,7 +70,7 @@ app.use(notFoundHandler);
 
 app.get('/health', (req, res) => {
   res.status(200).json({ 
-    status: 'ok', 
+    status: 'Backend is running', 
     timestamp: new Date().toISOString() 
   });
 });
