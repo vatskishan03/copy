@@ -37,26 +37,60 @@ export class SnippetService {
 
   async getSnippet(token: string) {
     try {
+      // First check if the snippet exists
       const cached = await this.redis.get(`snippet:${token}`);
+      
+      // If it exists, increment the view count first
       if (cached) {
-        const snippet = JSON.parse(cached);
+        // Update access time and increment count in the database
         await this.updateLastAccessed(token);
-        return snippet;
+        
+        // Re-fetch the updated snippet with incremented view count
+        const updatedSnippet = await this.prisma.snippet.findUnique({
+          where: { token }
+        });
+        
+        if (updatedSnippet) {
+          // Update the cache with fresh data that includes the incremented view count
+          await this.redis.setex(
+            `snippet:${token}`,
+            24 * 60 * 60,
+            JSON.stringify(updatedSnippet)
+          );
+          return updatedSnippet;
+        }
+        
+        // Fallback to using cached data if refetch fails for some reason
+        return JSON.parse(cached);
       }
-
+  
+      // If not in cache, get from database
       const snippet = await this.prisma.snippet.findUnique({
         where: { token }
       });
-
+  
       if (snippet) {
+        // Update access time and increment count
         await this.updateLastAccessed(token);
-        await this.redis.setex(
-          `snippet:${token}`,
-          24 * 60 * 60,
-          JSON.stringify(snippet)
-        );
+        
+        // Get the updated snippet with the new view count
+        const updatedSnippet = await this.prisma.snippet.findUnique({
+          where: { token }
+        });
+        
+        // Cache the updated version with correct view count
+        if (updatedSnippet) {
+          await this.redis.setex(
+            `snippet:${token}`,
+            24 * 60 * 60,
+            JSON.stringify(updatedSnippet)
+          );
+          return updatedSnippet;
+        }
+        
+        return snippet;
       }
-
+  
       return snippet;
     } catch (error) {
       logger.error('Error getting snippet:', error);
@@ -90,7 +124,10 @@ export class SnippetService {
   private async updateLastAccessed(token: string) {
     await this.prisma.snippet.update({
       where: { token },
-      data: { lastAccessed: new Date() }
+      data: { 
+        lastAccessed: new Date(),
+        viewCount: { increment: 1 } 
+      }
     });
   }
 }
