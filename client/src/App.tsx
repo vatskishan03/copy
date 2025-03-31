@@ -4,6 +4,7 @@ import ClipboardHub from './components/ClipboardHub';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import { ThemeProvider } from './components/provider/ThemeProvider';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 const App = () => {
   return (
@@ -33,6 +34,7 @@ const App = () => {
             </Routes>
           </main>
           <Footer />
+          <SpeedInsights />
         </div>
       </BrowserRouter>
     </ThemeProvider>
