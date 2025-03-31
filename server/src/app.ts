@@ -68,6 +68,13 @@ app.use(compression());
 app.use('/api/snippets', snippetRoutes);
 app.use(notFoundHandler);
 
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString() 
+  });
+});
+
 const PORT = env.PORT;
 server.listen(PORT, () => {
   logger.info(`Server running in ${env.NODE_ENV} mode on port ${PORT}`);
