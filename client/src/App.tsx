@@ -25,7 +25,7 @@ const App = () => {
                       <li>Enter your text in the editor</li>
                       <li>Click <strong>Create</strong> to generate a unique token</li>
                       <li>Share the token with others</li>
-                      <li>Others can paste the token and click <strong>Receive</strong> to join your session</li>
+                      <li>Others can paste the token in <strong>Join Collaboration</strong> field and click <strong>Receive</strong> to join your session</li>
                       <li>You can <strong>collaborate</strong> with others and edit the text (like google docs) in <strong>real-time</strong> </li>
                     </ol>
                   </div>
