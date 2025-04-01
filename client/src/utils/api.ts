@@ -1,14 +1,13 @@
 // Automatically detect environment based on the current hostname
 const isProd = window.location.hostname !== 'localhost';
 
-// Use appropriate URLs based on environment
 export const API_BASE_URL = isProd 
-  ? 'https://copyit.onrender.com/api'  // Production backend URL
-  : 'http://localhost:3001/api';       // Local development backend URL
+  ? 'https://copyit.onrender.com/api'  
+  : 'http://localhost:3001/api';       
 
 export const WEBSOCKET_URL = isProd
-  ? 'wss://copyit.onrender.com'        // Secure WebSocket for production (note: wss://)
-  : 'ws://localhost:3001';             // Local WebSocket
+  ? 'wss://copyit.onrender.com'        
+  : 'ws://localhost:3001';         
 
 export const api = {
   createSnippet: async (content: string) => {
