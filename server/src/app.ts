@@ -23,7 +23,7 @@ const cleanupService = new CleanupService(prisma, redis);
 
 const allowedOrigins = [
   "https://copyit-three.vercel.app",
-  "https://copyit.in", 
+  "https://copyit.in",  
   "http://localhost:3000"
 ];
 
