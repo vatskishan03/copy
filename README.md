@@ -65,10 +65,10 @@ Prerequisites
 
     5. Start development servers
        cd client
-       npm run dev
+       npm start
 
        cd server
-       npm start
+       npm run dev
 
 How to Use
 
@@ -92,7 +92,7 @@ Contributing
 License
 
     This project is licensed under the ISC License.
-    
+
 Creator
 
     Built by Kishan
