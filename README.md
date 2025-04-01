@@ -73,17 +73,17 @@ Prerequisites
 How to Use
 
 1. Create a snippet:
-   Enter your text in the editor
-   Click "Create" to generate a unique token
+       Enter your text in the editor.
+       Click "Create" to generate a unique token.
 
-2. Share the token:
-   Copy the generated token
-   Share it with others who need access to your text
+2. Share the token,
+       Copy the generated token.
+       Share it with others who need access to your text
 
-3. Join a collaboration:
-   Enter the token in the "Join Collaboration" box
-   Click "Receive" to load the content
-   All connected users can edit in real-time
+3. Join a collaboration,
+       Enter the token in the "Join Collaboration" box.
+       Click "Receive" to load the content.
+       All connected users can edit in real-time
 
 Contributing
 
