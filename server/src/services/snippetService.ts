@@ -54,7 +54,7 @@ export class SnippetService {
           // Update the cache with fresh data that includes the incremented view count
           await this.redis.setex(
             `snippet:${token}`,
-            24 * 60 * 60,
+            48 * 60 * 60,
             JSON.stringify(updatedSnippet)
           );
           return updatedSnippet;
@@ -82,7 +82,7 @@ export class SnippetService {
         if (updatedSnippet) {
           await this.redis.setex(
             `snippet:${token}`,
-            24 * 60 * 60,
+            48 * 60 * 60,
             JSON.stringify(updatedSnippet)
           );
           return updatedSnippet;

@@ -14,7 +14,7 @@ export const WEBSOCKET_EVENTS = {
   } as const;
   
   export const CONFIG = {
-    SNIPPET_EXPIRY: 24 * 60 * 60, // 24 hours 
+    SNIPPET_EXPIRY: 48 * 60 * 60, // 48 hours 
     MAX_CONTENT_LENGTH: 10000,
     TOKEN_LENGTH: 5
   } as const;
