@@ -1,10 +1,11 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useClipboard } from "../hooks/useClipboard";
 import Button from "./ui/Button";
 import { Copy, Check, Users } from 'lucide-react';
 import { API_BASE_URL } from "../utils/api";
 import { WEBSOCKET_URL } from "../utils/api";
+import throttle from 'lodash.throttle';
 
 export default function ClipboardHub() {
   const [content, setContent] = useState("");
@@ -33,7 +34,7 @@ export default function ClipboardHub() {
     const newContent = e.target.value;
     setContent(newContent);
     if (isEditing) {
-      updateContent(newContent);
+      throttledUpdateContent(newContent);
     }
   };
 
@@ -103,6 +104,24 @@ export default function ClipboardHub() {
     }
   };
 
+  // Memoize collaborators list rendering to prevent unnecessary re-renders
+  const collaboratorList = useMemo(() => (
+    <div className="flex items-center space-x-2">
+      <Users className="h-5 w-5 text-amber-900 dark:text-amber-200" />
+      <span className="text-sm text-amber-900 dark:text-amber-200">
+        <strong>{collaborators.length} connected</strong>
+      </span>
+    </div>
+  ), [collaborators.length]);
+
+  // Throttle content updates to the server
+  const throttledUpdateContent = useCallback(
+    throttle((content: string) => {
+      updateContent(content);
+    }, 100), // 100ms throttle
+    [updateContent]
+  );
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
       
@@ -158,10 +177,7 @@ export default function ClipboardHub() {
                 Collaborative Editor
               </h2>
               <div className="flex items-center space-x-2">
-                <Users className="h-5 w-5 text-amber-900 dark:text-amber-200" />
-                <span className="text-sm text-amber-900 dark:text-amber-200">
-                  <strong>{collaborators.length} connected</strong>
-                </span>
+                {collaboratorList}
                 <Button
                   onClick={handleCopyContent}
                   variant="ghost"
