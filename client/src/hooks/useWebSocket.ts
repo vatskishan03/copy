@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import io, { Socket } from 'socket.io-client';
+import { createDiff } from '../utils/diffUtils';
 
 interface ContentLoadPayload {
   content: string;
