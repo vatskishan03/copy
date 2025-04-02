@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import io, { Socket } from 'socket.io-client';
 
 interface ContentLoadPayload {
@@ -17,6 +17,7 @@ export const useWebSocket = (url: string, token: string, onContentUpdate: (conte
   const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
   const [collaborators, setCollaborators] = useState<string[]>([]);
+  const contentRef = useRef<string>('');
 
   useEffect(() => {
     if (!token) return;
@@ -64,7 +65,19 @@ export const useWebSocket = (url: string, token: string, onContentUpdate: (conte
 
   const updateContent = useCallback((content: string) => {
     if (socket && connected) {
-      socket.emit('content-change', { token, content });
+      const previousContent = contentRef.current;
+      contentRef.current = content;
+      
+      // Only send changes, not the entire content when appropriate
+      if (previousContent && content.length > 1000 && 
+          Math.abs(previousContent.length - content.length) < 20) {
+        // Send diff instead of full content for large texts with small changes
+        const diff = createDiff(previousContent, content);
+        socket.emit('content-diff', { token, diff });
+      } else {
+        // For smaller content or bigger changes, send full content
+        socket.emit('content-change', { token, content });
+      }
     }
   }, [socket, connected, token]);
 
