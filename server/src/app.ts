@@ -22,7 +22,6 @@ const snippetService = new SnippetService(prisma, redis);
 const cleanupService = new CleanupService(prisma, redis);
 
 const allowedOrigins = [
-  "https://copyit-three.vercel.app",
   "https://copyit.in",  
   "http://localhost:3000"
 ];
