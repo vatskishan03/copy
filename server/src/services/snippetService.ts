@@ -17,13 +17,13 @@ export class SnippetService {
         data: {
           token,
           content,
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+          expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000)
         }
       });
 
       await this.redis.setex(
         `snippet:${token}`,
-        24 * 60 * 60,
+        48 * 60 * 60,
         JSON.stringify(snippet)
       );
 
@@ -37,33 +37,27 @@ export class SnippetService {
 
   async getSnippet(token: string) {
     try {
-      // First check if the snippet exists
-      const cached = await this.redis.get(`snippet:${token}`);
+    
+      const pipeline = this.redis.pipeline();
+      pipeline.get(`snippet:${token}`);
+      pipeline.incr(`views:${token}`); // Atomic increment for view count
       
-      // If it exists, increment the view count first
-      if (cached) {
-        // Update access time and increment count in the database
-        await this.updateLastAccessed(token);
+      const [cachedData, viewCount] = await pipeline.exec();
+      if (cachedData[1]) {
+        const snippet = JSON.parse(cachedData[1]);
         
-        // Re-fetch the updated snippet with incremented view count
-        const updatedSnippet = await this.prisma.snippet.findUnique({
-          where: { token }
-        });
+        // Update view count in database asynchronously
+        this.prisma.snippet.update({
+          where: { token },
+          data: { 
+            lastAccessed: new Date(),
+            viewCount: parseInt(viewCount[1]) 
+          }
+        }).catch(err => logger.error('Error updating view count:', err));
         
-        if (updatedSnippet) {
-          // Update the cache with fresh data that includes the incremented view count
-          await this.redis.setex(
-            `snippet:${token}`,
-            48 * 60 * 60,
-            JSON.stringify(updatedSnippet)
-          );
-          return updatedSnippet;
-        }
-        
-        // Fallback to using cached data if refetch fails for some reason
-        return JSON.parse(cached);
+        return snippet;
       }
-  
+      
       // If not in cache, get from database
       const snippet = await this.prisma.snippet.findUnique({
         where: { token }
@@ -110,7 +104,7 @@ export class SnippetService {
 
       await this.redis.setex(
         `snippet:${token}`, 
-        24 * 60 * 60,
+        48 * 60 * 60,
         JSON.stringify(updated)
       );
 
