@@ -23,13 +23,13 @@ class DatabaseService {
       port: parseInt(process.env.REDIS_PORT || '18613'),
       username: 'default',
       password: process.env.REDIS_PASSWORD,
+      connectTimeout: 10000,
+      commandTimeout: 5000,
+      maxRetriesPerRequest: 3,
       retryStrategy: (times) => {
-        if (times > 3) {
-          logger.error('Failed to connect to Redis after 3 retries');
-          return null;
-        }
         return Math.min(times * 50, 2000);
       },
+      enableAutoPipelining: true,
       enableOfflineQueue: true,
       family: 4
     };
