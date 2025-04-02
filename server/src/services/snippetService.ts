@@ -2,6 +2,10 @@ import { PrismaClient } from '@prisma/client';
 import { Redis } from 'ioredis';
 import { generateToken } from '../utils/tokenGenerator';
 import { logger } from '../config/logger';
+import { CONFIG } from '../../shared/constants';
+
+
+const SNIPPET_TTL = CONFIG.SNIPPET_EXPIRY;
 
 export class SnippetService {
   constructor(
@@ -11,21 +15,30 @@ export class SnippetService {
 
   async createSnippet(content: string): Promise<{ token: string }> {
     try {
+      
       const token = await generateToken(5);
       
-      const snippet = await this.prisma.snippet.create({
-        data: {
-          token,
-          content,
-          expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000)
-        }
+      // Get expiry date for both database and cache
+      const expiryDate = new Date(Date.now() + SNIPPET_TTL * 1000);
+      
+      // Use a transaction to ensure data consistency
+      const snippet = await this.prisma.$transaction(async (tx) => {
+        return tx.snippet.create({
+          data: {
+            token,
+            content,
+            expiresAt: expiryDate
+          }
+        });
       });
 
-      await this.redis.setex(
-        `snippet:${token}`,
-        48 * 60 * 60,
-        JSON.stringify(snippet)
-      );
+      // Use pipeline for Redis operations
+      const pipeline = this.redis.pipeline();
+      pipeline.setex(`snippet:${token}`, SNIPPET_TTL, JSON.stringify(snippet));
+
+      // Pre-initialize view count to avoid race conditions
+      pipeline.set(`views:${token}`, 0);
+      await pipeline.exec();
 
       logger.info(`Snippet created with token: ${token}`);
       return { token };
@@ -37,54 +50,60 @@ export class SnippetService {
 
   async getSnippet(token: string) {
     try {
-    
+      // Use pipeline to reduce Redis roundtrips
       const pipeline = this.redis.pipeline();
       pipeline.get(`snippet:${token}`);
-      pipeline.incr(`views:${token}`); // Atomic increment for view count
+      pipeline.incr(`views:${token}`);
+      pipeline.expire(`views:${token}`, SNIPPET_TTL);
       
-      const [cachedData, viewCount] = await pipeline.exec();
-      if (cachedData[1]) {
-        const snippet = JSON.parse(cachedData[1]);
+      const results = await pipeline.exec();
+      const cachedData = results[0][1];
+      const viewCount = parseInt(results[1][1] as string) || 0;
+      
+      if (cachedData) {
+        const snippet = JSON.parse(cachedData as string);
         
-        // Update view count in database asynchronously
-        this.prisma.snippet.update({
-          where: { token },
-          data: { 
-            lastAccessed: new Date(),
-            viewCount: parseInt(viewCount[1]) 
-          }
-        }).catch(err => logger.error('Error updating view count:', err));
+        // Update database in background without blocking response
+        this.updateSnippetStats(token, viewCount).catch(err => 
+          logger.error('Background stats update failed:', err)
+        );
         
         return snippet;
       }
       
-      // If not in cache, get from database
-      const snippet = await this.prisma.snippet.findUnique({
-        where: { token }
-      });
-  
-      if (snippet) {
-        // Update access time and increment count
-        await this.updateLastAccessed(token);
-        
-        // Get the updated snippet with the new view count
-        const updatedSnippet = await this.prisma.snippet.findUnique({
+      // Cache miss - get from database with optimistic locking
+      const snippet = await this.prisma.$transaction(async (tx) => {
+        // Check if snippet exists
+        const existingSnippet = await tx.snippet.findUnique({
           where: { token }
         });
         
-        // Cache the updated version with correct view count
-        if (updatedSnippet) {
-          await this.redis.setex(
-            `snippet:${token}`,
-            48 * 60 * 60,
-            JSON.stringify(updatedSnippet)
-          );
-          return updatedSnippet;
-        }
+        if (!existingSnippet) return null;
         
-        return snippet;
+        return tx.snippet.update({
+          where: { token },
+          data: { 
+            lastAccessed: new Date(),
+            viewCount: viewCount > 0 ? viewCount : { increment: 1 }
+          }
+        });
+      });
+      
+      if (snippet) {
+        // Cache the result with pipeline
+        const cachePipeline = this.redis.pipeline();
+        cachePipeline.setex(`snippet:${token}`, SNIPPET_TTL, JSON.stringify(snippet));
+        
+        // If we didn't have a view count in Redis, set it to match DB
+        if (viewCount === 0) {
+          cachePipeline.set(`views:${token}`, snippet.viewCount);
+          cachePipeline.expire(`views:${token}`, SNIPPET_TTL);
+        }
+        cachePipeline.exec().catch(err => 
+          logger.error('Cache repopulation failed:', err)
+        );
       }
-  
+      
       return snippet;
     } catch (error) {
       logger.error('Error getting snippet:', error);
@@ -94,19 +113,30 @@ export class SnippetService {
 
   async updateSnippet(token: string, content: string) {
     try {
-      const updated = await this.prisma.snippet.update({
-        where: { token },
-        data: { 
-          content,
-          lastAccessed: new Date()
-        }
+      // Use transaction for atomic update
+      const updated = await this.prisma.$transaction(async (tx) => {
+        // Get current view count to preserve it
+        const current = await tx.snippet.findUnique({
+          where: { token },
+          select: { viewCount: true }
+        });
+        
+        if (!current) throw new Error(`Snippet with token ${token} not found`);
+        
+        return tx.snippet.update({
+          where: { token },
+          data: { 
+            content,
+            lastAccessed: new Date()
+          }
+        });
       });
 
-      await this.redis.setex(
-        `snippet:${token}`, 
-        48 * 60 * 60,
-        JSON.stringify(updated)
-      );
+      // Update Redis cache with pipeline
+      const pipeline = this.redis.pipeline();
+      pipeline.setex(`snippet:${token}`, SNIPPET_TTL, JSON.stringify(updated));
+      pipeline.expire(`views:${token}`, SNIPPET_TTL); // Reset view counter TTL
+      await pipeline.exec();
 
       return updated;
     } catch (error) {
@@ -115,13 +145,19 @@ export class SnippetService {
     }
   }
 
-  private async updateLastAccessed(token: string) {
-    await this.prisma.snippet.update({
-      where: { token },
-      data: { 
-        lastAccessed: new Date(),
-        viewCount: { increment: 1 } 
-      }
-    });
+  // Background method to sync Redis view counts with database
+  private async updateSnippetStats(token: string, viewCount: number) {
+    try {
+      await this.prisma.snippet.update({
+        where: { token },
+        data: { 
+          lastAccessed: new Date(),
+          viewCount: viewCount
+        }
+      });
+    } catch (error) {
+      logger.error(`Failed to update stats for token ${token}:`, error);
+      // Non-critical operation, so we just log the error
+    }
   }
 }
