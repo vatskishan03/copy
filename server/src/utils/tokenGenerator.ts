@@ -15,27 +15,31 @@ const charSets: TokenPattern = {
 };
 
 export const generateToken = async (length: number = 5): Promise<string> => {
-  const pattern = [
-    charSets.digits, 
-    charSets.digits,
-    charSets.lowercase, 
-    charSets.uppercase,
-    charSets.special
-  ];
-
-  while (true) {
+  // Pre-generate character set for faster access
+  const allChars = charSets.digits + charSets.lowercase + charSets.uppercase + charSets.special;
+  
+  // Batch generate multiple tokens for efficiency
+  const batchSize = 5;
+  const tokens: string[] = [];
+  
+  for (let i = 0; i < batchSize; i++) {
     let token = '';
-    for (const charSet of pattern) {
-      const randomIndex = Math.floor(Math.random() * charSet.length);
-      token += charSet.charAt(randomIndex);
+    for (let j = 0; j < length; j++) {
+      const randomIndex = Math.floor(Math.random() * allChars.length);
+      token += allChars.charAt(randomIndex);
     }
-
-    const existingSnippet = await prisma.snippet.findUnique({
-      where: { token }
-    });
-
-    if (!existingSnippet) {
-      return token;
-    }
+    tokens.push(token);
   }
+
+  // Check all tokens at once
+  const existingTokens = await prisma.snippet.findMany({
+    where: { token: { in: tokens } },
+    select: { token: true }
+  });
+
+  const existingSet = new Set(existingTokens.map(t => t.token));
+  const availableToken = tokens.find(t => !existingSet.has(t));
+  
+  // If all tokens in batch are used (extremely unlikely), recursively try again
+  return availableToken || generateToken(length);
 };
