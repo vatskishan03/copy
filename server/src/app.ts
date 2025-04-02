@@ -11,6 +11,8 @@ import { validateEnv } from './env';
 import { logger } from './config/logger';
 import compression from 'compression';
 import { CleanupService } from './services/cleanupService';
+import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
 
 const env = validateEnv();
 
@@ -64,6 +66,23 @@ setInterval(() => {
 
 app.use(express.json());
 app.use(compression());
+app.use(helmet());
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+
+app.use('/api/', apiLimiter);
+
+const tokenLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 20, // 20 tokens per hour per IP
+});
+app.use('/api/snippets/token', tokenLimiter);
 
 app.get('/health', (req, res) => {
   res.status(200).json({ 
