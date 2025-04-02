@@ -34,7 +34,7 @@ export class WebSocketService {
               await this.handleContentUpdate(token, bufferedContent);
               this.contentBuffers.delete(token);
             }
-          }, 1000);
+          }, 250); 
 
           this.updateTimeouts.set(token, timeout);
 
