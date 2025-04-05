@@ -21,23 +21,30 @@ export class WebSocketService {
 
       socket.on('content-change', async ({ token, content, cursor }) => {
         try {
+          // Store the complete content in buffer - don't rely on partial updates
           this.contentBuffers.set(token, content);
-
+          
+          // Broadcast immediately to other clients for real-time collaborative feel
+          // This ensures collaborators see changes right away
+          socket.broadcast.to(token).emit('content-updated', { content });
+      
+          // Maintain the debounce for database updates only
           const existingTimeout = this.updateTimeouts.get(token);
           if (existingTimeout) {
             clearTimeout(existingTimeout);
           }
-
+      
           const timeout = setTimeout(async () => {
             const bufferedContent = this.contentBuffers.get(token);
             if (bufferedContent !== undefined) {
-              await this.handleContentUpdate(token, bufferedContent);
+              // Only save to database, don't emit again
+              await this.snippetService.updateSnippet(token, bufferedContent);
               this.contentBuffers.delete(token);
             }
-          }, 250); 
-
+          }, 750); 
+      
           this.updateTimeouts.set(token, timeout);
-
+      
           socket.broadcast.to(token).emit('cursor-update', {
             userId: socket.id,
             cursor
