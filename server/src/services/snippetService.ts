@@ -16,7 +16,7 @@ export class SnippetService {
   async createSnippet(content: string): Promise<{ token: string }> {
     try {
       
-      const token = await generateToken(5);
+      const token = await generateToken();
       
       // Get expiry date for both database and cache
       const expiryDate = new Date(Date.now() + SNIPPET_TTL * 1000);

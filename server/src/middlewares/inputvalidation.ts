@@ -11,8 +11,8 @@ export const validateSnippetCreation = [
 export const validateSnippetRetrieval = [
   param('token')
     .trim()
-    .isLength({ min: 5, max: 5 }).withMessage('Token must be exactly 5 characters')
-    .matches(/^[A-Za-z0-9!@$&*()]+$/).withMessage('Token contains invalid characters'),
+    .isLength({ min: 4, max: 4 }).withMessage('Token must be exactly 4 digits')
+    .isNumeric().withMessage('Token must contain only digits'),
 ];
 
 export const handleValidationErrors = (req: Request, res: Response, next: NextFunction) => {
