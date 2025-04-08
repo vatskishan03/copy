@@ -3,14 +3,17 @@
     "target": "es6",
     "module": "commonjs",
     "outDir": "./dist",
-    "rootDir": "../../", 
+    "rootDir": "./src",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "../../../shared/*": ["../shared/*"]
+    }
   },
   "include": [
-    "src/**/*", 
-    "../shared/**/*" 
+    "src/**/*"
   ],
   "exclude": ["node_modules", "**/*.spec.ts"]
 }

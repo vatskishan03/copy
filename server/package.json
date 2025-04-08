@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node dist/app.js",
     "dev": "nodemon src/app.ts",
-    "prebuild": "npm install -g typescript && npm install && npx prisma generate",
+    "prebuild": "npm install -g typescript && npm install && npx prisma generate && mkdir -p ./src/shared && cp -r ../shared/* ./src/shared/",
     "build": "tsc",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
