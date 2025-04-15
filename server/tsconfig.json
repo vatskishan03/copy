@@ -1,23 +1,18 @@
+// filepath: c:\Users\Kishan\Desktop\Codes\Project\copy\server\tsconfig.json
 {
   "compilerOptions": {
     "target": "es6",
     "module": "commonjs",
-    // Place compiled files in ../dist so both server and shared are output together
-    "outDir": "../dist",
-    // Compile from the server directory and the shared directory one level up
-    "rootDir": "..",
+    "outDir": "./dist",  // Changed back
+    "rootDir": "./src",   // Changed back
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  // Include server src and shared directory outside the server folder
   "include": [
-    "../shared/**/*",
-    "src/**/*"
+    "src/**/*" // Only include src
   ],
-  // Exclude client code and unwanted files
   "exclude": [
-    "../client",
     "node_modules",
     "**/*.spec.ts"
   ]

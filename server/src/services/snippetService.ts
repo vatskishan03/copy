@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { Redis } from 'ioredis';
 import { generateToken } from '../utils/tokenGenerator';
 import { logger } from '../config/logger';
-import { CONFIG } from '../../../shared/constants';
+import { CONFIG } from '../shared/constants';
 
 
 const SNIPPET_TTL = CONFIG.SNIPPET_EXPIRY;
