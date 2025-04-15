@@ -5,13 +5,14 @@
   "scripts": {
     "start": "node dist/app.js",
     "dev": "nodemon src/app.ts",
-    "prebuild": "npm install -g typescript && npm install && npx prisma generate && mkdir -p ./src/shared && cp -r ../shared/* ./src/shared/",
+    "prebuild": "npm install -g typescript && npm install && npx prisma generate",
     "build": "tsc",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "ts-node prisma/seed.ts",
     "db:reset": "prisma migrate reset"
   },
+
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
   },

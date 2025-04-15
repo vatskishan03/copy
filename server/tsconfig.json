@@ -3,14 +3,14 @@
   "compilerOptions": {
     "target": "es6",
     "module": "commonjs",
-    "outDir": "./dist",  // Changed back
-    "rootDir": "./src",   // Changed back
+    "outDir": "./dist",
+    "rootDir": "./src", // Correct, as all source is under src
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
   "include": [
-    "src/**/*" // Only include src
+    "src/**/*" // Correct, includes src/shared
   ],
   "exclude": [
     "node_modules",
