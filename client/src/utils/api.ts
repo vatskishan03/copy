@@ -2,11 +2,11 @@
 const isProd = window.location.hostname !== 'localhost';
 
 export const API_BASE_URL = isProd 
-  ? 'https://copyit.onrender.com/api'  
+  ? 'https://copy-mkuy.onrender.com/api'  
   : 'http://localhost:3001/api';       
 
 export const WEBSOCKET_URL = isProd
-  ? 'wss://copyit.onrender.com'        
+  ? 'wss://copy-mkuy.onrender.com'        
   : 'ws://localhost:3001';         
 
 export const api = {
