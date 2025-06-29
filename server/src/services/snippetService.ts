@@ -19,7 +19,7 @@ export class SnippetService {
       const token = await generateToken();
       
       // Get expiry date for both database and cache
-      const expiryDate = new Date(Date.now() + SNIPPET_TTL * 1000);
+      const expiryDate = new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000);
       
       // Use a transaction to ensure data consistency
       const snippet = await this.prisma.$transaction(async (tx) => {
@@ -34,7 +34,7 @@ export class SnippetService {
 
       // Use pipeline for Redis operations
       const pipeline = this.redis.pipeline();
-      pipeline.setex(`snippet:${token}`, SNIPPET_TTL, JSON.stringify(snippet));
+      pipeline.setex(`snippet:${token}`, 31536000, JSON.stringify(snippet));
 
       // Pre-initialize view count to avoid race conditions
       pipeline.set(`views:${token}`, 0);
@@ -92,12 +92,12 @@ export class SnippetService {
       if (snippet) {
         // Cache the result with pipeline
         const cachePipeline = this.redis.pipeline();
-        cachePipeline.setex(`snippet:${token}`, SNIPPET_TTL, JSON.stringify(snippet));
+        cachePipeline.setex(`snippet:${token}`, 31536000, JSON.stringify(snippet));   
         
         // If we didn't have a view count in Redis, set it to match DB
         if (viewCount === 0) {
           cachePipeline.set(`views:${token}`, snippet.viewCount);
-          cachePipeline.expire(`views:${token}`, SNIPPET_TTL);
+          cachePipeline.expire(`views:${token}`, 31536000);
         }
         cachePipeline.exec().catch(err => 
           logger.error('Cache repopulation failed:', err)
@@ -134,8 +134,8 @@ export class SnippetService {
 
       // Update Redis cache with pipeline
       const pipeline = this.redis.pipeline();
-      pipeline.setex(`snippet:${token}`, SNIPPET_TTL, JSON.stringify(updated));
-      pipeline.expire(`views:${token}`, SNIPPET_TTL); // Reset view counter TTL
+      pipeline.setex(`snippet:${token}`, 31536000, JSON.stringify(updated));
+      pipeline.expire(`views:${token}`, 31536000); // Reset view counter TTL
       await pipeline.exec();
 
       return updated;

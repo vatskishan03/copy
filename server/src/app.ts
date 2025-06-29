@@ -59,9 +59,9 @@ const io = new Server(server, {
 
 const webSocketService = new WebSocketService(io, snippetService);
 
-setInterval(() => {
-  cleanupService.cleanupExpiredSnippets();
-}, 60 * 60 * 5000);
+// setInterval(() => {
+//   cleanupService.cleanupExpiredSnippets();
+// }, 60 * 60 * 5000);
 
 
 app.use(express.json());

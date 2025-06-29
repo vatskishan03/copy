@@ -13,8 +13,8 @@ export const WEBSOCKET_EVENTS = {
     UPDATE_SNIPPET: (token: string) => `/api/snippets/${token}`
   } as const;
   
-  export const CONFIG = {
-    SNIPPET_EXPIRY: 48 * 60 * 60, // 48 hours 
-    MAX_CONTENT_LENGTH: 10000,
-    TOKEN_LENGTH: 4
-  } as const;
+ export const CONFIG = {
+  SNIPPET_EXPIRY: 31536000, // 1 year 
+  MAX_CONTENT_LENGTH: 10000,
+  TOKEN_LENGTH: 4
+} as const;
