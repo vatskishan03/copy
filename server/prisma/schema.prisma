@@ -18,7 +18,6 @@ model Snippet {
   lastAccessed DateTime @default(now())
   viewCount    Int      @default(0)
 
-  @@index([token])
   @@index([expiresAt])
   @@index([lastAccessed])
 }
