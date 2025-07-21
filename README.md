@@ -9,7 +9,7 @@ Features
     ✨ No Account Required - Create and share snippets instantly
     🔄 Real-time Collaboration - Multiple users can edit the same snippet simultaneously
     🔑 Simple Token System - Share your content with a 5-character token
-    🕒 Auto-Expiry - Snippets automatically expire after 24 hours
+    🕒 Never-Expiry - Snippets never expires, get your text anytime.
     🌓 Dark Mode Support - Easy on the eyes, day or night
     📱 Responsive Design - Works seamlessly on desktop and mobile
     🔒 Secure - Content is transmitted securely
