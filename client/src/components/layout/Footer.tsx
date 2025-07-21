@@ -9,7 +9,7 @@ const Footer: React.FC = () => {
         <p className="text-sm">
           Built by{" "}
           <a
-            href="https://www.linkedin.com/in/kishan-kumar03"
+            href="https://heykishan.com"
             target="_blank"
             rel="noopener noreferrer"
             className="font-bold hover:text-blue-200"
