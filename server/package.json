@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node dist/app.js",
     "dev": "nodemon src/app.ts",
-    "prebuild": "npm install -g typescript && npm install && npx prisma generate",
+    "prebuild": "npx prisma generate",
     "build": "tsc",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
@@ -47,7 +47,7 @@
     "lodash.throttle": "^4.1.1",
     "nodemon": "^3.1.7",
     "pg": "^8.13.0",
-    "redis": "^4.7.0",
+    "redis": "^4.7.1",
     "socket.io": "^4.8.1",
     "ts-node": "^10.9.2",
     "winston": "^3.17.0",

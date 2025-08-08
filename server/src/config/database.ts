@@ -2,6 +2,7 @@ import { Prisma, PrismaClient } from '@prisma/client';
 import { Redis, RedisOptions } from 'ioredis';
 import { logger } from './logger';
 import { TLSSocket } from 'tls';
+import { validateEnv } from '../env';
 
 class DatabaseService {
   private static instance: DatabaseService;
@@ -9,30 +10,49 @@ class DatabaseService {
   private redis: Redis;
 
   private constructor() {
+    // Ensure env vars are loaded even if this module is imported before app.ts
+    const env = validateEnv();
+
     this.prisma = new PrismaClient({
-      log: [
-        { level: 'warn', emit: 'event' },
-        { level: 'error', emit: 'event' },
-        { level: 'info', emit: 'event' },
-        { level: 'query', emit: 'event' },
-      ],
+      log:
+        env.NODE_ENV === 'production'
+          ? [
+              { level: 'warn', emit: 'event' },
+              { level: 'error', emit: 'event' },
+            ]
+          : [
+              { level: 'warn', emit: 'event' },
+              { level: 'error', emit: 'event' },
+              { level: 'info', emit: 'event' },
+              { level: 'query', emit: 'event' },
+            ],
     });
 
     const redisConfig: RedisOptions = {
-      host: process.env.REDIS_HOST,
-      port: parseInt(process.env.REDIS_PORT || '18613'),
+      host: env.REDIS_HOST,
+      port: parseInt(env.REDIS_PORT || '18613'),
       username: 'default',
-      password: process.env.REDIS_PASSWORD,
-      connectTimeout: 10000,
-      commandTimeout: 5000,
-      maxRetriesPerRequest: 3,
+      password: env.REDIS_PASSWORD,
+      connectTimeout: 7000,
+      commandTimeout: 3000,
+      maxRetriesPerRequest: 2,
       retryStrategy: (times) => {
-        return Math.min(times * 50, 2000);
+        return Math.min(times * 50, 1500);
       },
       enableAutoPipelining: true,
       enableOfflineQueue: true,
-      family: 4
+      lazyConnect: true,
+      family: 4,
     };
+
+    // Enable TLS for Redis Cloud hosts
+    if (/redns\.redis-cloud\.com$/.test(redisConfig.host || '')) {
+      (redisConfig as any).tls = {
+        servername: redisConfig.host,
+        minVersion: 'TLSv1.2',
+        rejectUnauthorized: env.NODE_ENV !== 'development',
+      };
+    }
 
     this.redis = new Redis(redisConfig);
 
@@ -90,6 +110,10 @@ class DatabaseService {
   public async checkConnections(): Promise<boolean> {
     try {
       await this.prisma.$queryRaw`SELECT 1`;
+      // Lazily connect Redis if not connected yet
+      if (!this.redis.status || this.redis.status === 'end') {
+        await this.redis.connect();
+      }
       await this.redis.ping();
       return true;
     } catch (error) {

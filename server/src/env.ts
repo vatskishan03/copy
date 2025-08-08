@@ -1,4 +1,28 @@
 import { logger } from './config/logger';
+import path from 'path';
+import fs from 'fs';
+import dotenv from 'dotenv';
+
+// Load local env for development if present (supports both ".env" and "env" filenames)
+(() => {
+  const candidates = [
+    // When running from server directory
+    path.join(process.cwd(), '.env'),
+    path.join(process.cwd(), 'env'),
+    // When running compiled code from dist
+    path.join(__dirname, '../.env'),
+    path.join(__dirname, '../env'),
+    // When running ts-node directly from src
+    path.join(__dirname, '.env'),
+    path.join(__dirname, 'env'),
+  ];
+  for (const file of candidates) {
+    if (fs.existsSync(file)) {
+      dotenv.config({ path: file });
+      break;
+    }
+  }
+})();
 
 interface EnvVars {
   DATABASE_URL: string;

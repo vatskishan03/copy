@@ -2,9 +2,9 @@ import express from 'express';
 import http from 'http';
 import cors from 'cors';
 import { Server } from 'socket.io';
-import { SnippetService } from './services/snippetService'; 
+import { SnippetService } from './services/snippetService';
 import { WebSocketService } from './services/websocketService';
-import { prisma, redis } from './config/database';
+import dbService, { prisma, redis } from './config/database';
 import snippetRoutes from './routes/snippetRoutes';
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
 import { validateEnv } from './env';
@@ -19,33 +19,59 @@ const env = validateEnv();
 const app = express();
 const server = http.createServer(app);
 
+
+app.set('trust proxy', 1);
+
 // Initialize services
 const snippetService = new SnippetService(prisma, redis);
 const cleanupService = new CleanupService(prisma, redis);
 
+const normalize = (u: string) => (u ? u.replace(/\/$/, '') : u);
 const allowedOrigins = [
-  "https://copyit.in",  
-  "http://localhost:3000"
+  normalize(env.CLIENT_URL),
+  'https://copyit.in',
+  'http://localhost:3000'
 ];
 
-app.use(cors({
-  origin: function (origin, callback) {
-   
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error(`Origin ${origin} not allowed by CORS`));
-    }
-  },
-  optionsSuccessStatus: 200,
-  credentials: true
-}));
+// Lightweight liveness endpoint placed before heavier middlewares
+app.get('/health', (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.status(200).json({ status: 'ok', ts: new Date().toISOString() });
+});
+app.head('/health', (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.status(200).end();
+});
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      const isAllowed =
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        /\.vercel\.app$/.test(origin || '') ||
+        /\.onrender\.com$/.test(origin || '');
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        callback(new Error(`Origin ${origin} not allowed by CORS`));
+      }
+    },
+    optionsSuccessStatus: 200,
+    credentials: true,
+  })
+);
 
 const io = new Server(server, {
   cors: {
     origin: function (origin, callback) {
       if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) !== -1) {
+      const originNoSlash = origin.replace(/\/$/, '');
+      const isAllowed =
+        allowedOrigins.includes(originNoSlash) ||
+        /\.vercel\.app$/.test(originNoSlash) ||
+        /\.onrender\.com$/.test(originNoSlash);
+      if (isAllowed) {
         return callback(null, true);
       } else {
         return callback(new Error(`Origin ${origin} not allowed by WebSocket CORS`));
@@ -59,9 +85,6 @@ const io = new Server(server, {
 
 const webSocketService = new WebSocketService(io, snippetService);
 
-// setInterval(() => {
-//   cleanupService.cleanupExpiredSnippets();
-// }, 60 * 60 * 5000);
 
 
 app.use(express.json());
@@ -84,16 +107,42 @@ const tokenLimiter = rateLimit({
 });
 app.use('/api/snippets/token', tokenLimiter);
 
-app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'Backend is running', 
-    timestamp: new Date().toISOString() 
-  });
+// Readiness endpoint that checks critical dependencies with a short timeout
+app.get('/readyz', async (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const timeoutMs = 1500;
+  const withTimeout = <T>(p: Promise<T>): Promise<T> =>
+    new Promise((resolve, reject) => {
+      const t = setTimeout(() => reject(new Error('readiness-timeout')), timeoutMs);
+      p.then((v) => {
+        clearTimeout(t);
+        resolve(v);
+      }).catch((e) => {
+        clearTimeout(t);
+        reject(e);
+      });
+    });
+
+  try {
+    const ok = await withTimeout(dbService.checkConnections());
+    if (ok) {
+      return res.status(200).json({ status: 'ready' });
+    }
+    return res.status(503).json({ status: 'degraded' });
+  } catch (e) {
+    return res.status(503).json({ status: 'unavailable' });
+  }
 });
 
 app.use('/api/snippets', snippetRoutes);
 app.use(notFoundHandler);
+app.use(errorHandler);
 
+
+// Tune Node HTTP server timeouts to play nicely with proxies
+server.keepAliveTimeout = 65000; // slightly higher than typical proxy idle timeout
+server.headersTimeout = 66000;
+server.requestTimeout = 30000;
 
 const PORT = env.PORT;
 server.listen(PORT, () => {
@@ -118,6 +167,14 @@ process.on('SIGTERM', async () => {
     logger.error('Error during shutdown:', error);
     process.exit(1);
   }
+});
+
+// Catch unhandled promise rejections and exceptions to avoid hard crashes
+process.on('unhandledRejection', (reason) => {
+  logger.error('Unhandled Rejection:', reason as any);
+});
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception:', error);
 });
 
 export { app, server, io };
