@@ -110,26 +110,46 @@ app.use('/api/snippets/token', tokenLimiter);
 // Readiness endpoint that checks critical dependencies with a short timeout
 app.get('/readyz', async (_req, res) => {
   res.set('Cache-Control', 'no-store');
-  const timeoutMs = 1500;
-  const withTimeout = <T>(p: Promise<T>): Promise<T> =>
+
+  const withTimeout = <T>(p: Promise<T>, ms: number): Promise<T> =>
     new Promise((resolve, reject) => {
-      const t = setTimeout(() => reject(new Error('readiness-timeout')), timeoutMs);
-      p.then((v) => {
-        clearTimeout(t);
-        resolve(v);
-      }).catch((e) => {
-        clearTimeout(t);
-        reject(e);
-      });
+      const t = setTimeout(() => reject(new Error('timeout')), ms);
+      p.then((v) => { clearTimeout(t); resolve(v); })
+        .catch((e) => { clearTimeout(t); reject(e); });
     });
 
+  const pgCheck = withTimeout(prisma.$queryRaw`SELECT 1`, 2500)
+    .then(() => true)
+    .catch(() => false);
+
+  const redisCheck = withTimeout(
+    (async () => {
+      if (!redis.status || redis.status === 'end') {
+        try { await (redis as any).connect?.(); } catch { /* ignore */ }
+      }
+      await redis.ping();
+      return true;
+    })(),
+    2000
+  ).then(() => true).catch(() => false);
+
   try {
-    const ok = await withTimeout(dbService.checkConnections());
-    if (ok) {
-      return res.status(200).json({ status: 'ready' });
-    }
-    return res.status(503).json({ status: 'degraded' });
-  } catch (e) {
+    const [pgOk, redisOk] = await Promise.all([pgCheck, redisCheck]);
+
+    // Consider service ready if Postgres is OK (core dependency).
+    // Redis enhances performance but the app can operate without it.
+    const ready = pgOk;
+    const status = ready ? 'ready' : 'unavailable';
+    const httpCode = ready ? 200 : 503;
+
+    return res.status(httpCode).json({
+      status,
+      components: {
+        postgres: pgOk ? 'ok' : 'down',
+        redis: redisOk ? 'ok' : 'down',
+      },
+    });
+  } catch {
     return res.status(503).json({ status: 'unavailable' });
   }
 });
