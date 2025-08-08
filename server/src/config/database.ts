@@ -28,30 +28,42 @@ class DatabaseService {
             ],
     });
 
+    const fromUrl = new URL(env.REDIS_URL);
+    const isRediss = fromUrl.protocol === 'rediss:';
+
     const redisConfig: RedisOptions = {
-      host: env.REDIS_HOST,
-      port: parseInt(env.REDIS_PORT || '18613'),
-      username: 'default',
-      password: env.REDIS_PASSWORD,
+      host: fromUrl.hostname,
+      port: parseInt(fromUrl.port || '6379'),
+      username: fromUrl.username || 'default',
+      password: fromUrl.password || undefined,
       connectTimeout: 7000,
       commandTimeout: 3000,
       maxRetriesPerRequest: 2,
-      retryStrategy: (times) => {
-        return Math.min(times * 50, 1500);
-      },
+      retryStrategy: (times) => Math.min(times * 50, 1500),
       enableAutoPipelining: true,
       enableOfflineQueue: true,
       lazyConnect: true,
       family: 4,
+      ...(isRediss
+        ? {
+            tls: {
+              servername: fromUrl.hostname,
+              minVersion: 'TLSv1.2',
+              rejectUnauthorized: env.NODE_ENV !== 'development',
+            },
+          }
+        : {}),
     };
 
-    // Enable TLS for Redis Cloud hosts
-    if (/redns\.redis-cloud\.com$/.test(redisConfig.host || '')) {
-      (redisConfig as any).tls = {
-        servername: redisConfig.host,
-        minVersion: 'TLSv1.2',
-        rejectUnauthorized: env.NODE_ENV !== 'development',
-      };
+    // Do not force TLS via env; respect only the URL scheme
+
+
+    if (env.NODE_ENV !== 'production') {
+      logger.info('Redis connection config', {
+        host: redisConfig.host,
+        port: redisConfig.port,
+        tls: Boolean((redisConfig as any).tls),
+      });
     }
 
     this.redis = new Redis(redisConfig);

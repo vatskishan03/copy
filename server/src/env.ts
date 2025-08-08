@@ -26,26 +26,23 @@ import dotenv from 'dotenv';
 
 interface EnvVars {
   DATABASE_URL: string;
-  REDIS_HOST: string;
-  REDIS_PORT: string;
-  REDIS_PASSWORD?: string;
+  // Use a single REDIS_URL (redis:// or rediss://)
+  REDIS_URL: string;
   PORT: string;
   CLIENT_URL: string;
   NODE_ENV: 'development' | 'production';
 }
 
 const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-const requiredEnvVars: (keyof EnvVars)[] = [
+const baseRequired: (keyof EnvVars)[] = [
   'DATABASE_URL',
-  'REDIS_HOST',
-  'REDIS_PORT',
   'PORT',
   'CLIENT_URL',
   'NODE_ENV'
 ];
 
 export function validateEnv(): EnvVars {
-  for (const envVar of requiredEnvVars) {
+  for (const envVar of baseRequired) {
     if (!process.env[envVar]) {
       const error = `Missing required environment variable: ${envVar}`;
       logger.error(error);
@@ -53,11 +50,16 @@ export function validateEnv(): EnvVars {
     }
   }
 
+  // Require REDIS_URL exclusively
+  if (!process.env.REDIS_URL) {
+    const error = 'Missing Redis configuration: provide REDIS_URL (redis:// or rediss://)';
+    logger.error(error);
+    throw new Error(error);
+  }
+
   return {
     DATABASE_URL: process.env.DATABASE_URL!,
-    REDIS_HOST: process.env.REDIS_HOST!,
-    REDIS_PORT: process.env.REDIS_PORT!,
-    REDIS_PASSWORD: process.env.REDIS_PASSWORD,
+    REDIS_URL: process.env.REDIS_URL!,
     PORT: process.env.PORT!,
     CLIENT_URL: clientUrl, 
     NODE_ENV: (process.env.NODE_ENV as 'development' | 'production') || 'development'

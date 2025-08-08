@@ -88,7 +88,7 @@ const webSocketService = new WebSocketService(io, snippetService);
 
 
 app.use(express.json());
-app.use(compression());
+app.use(compression({ threshold: 1024 }));
 app.use(helmet());
 
 const apiLimiter = rateLimit({

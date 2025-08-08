@@ -129,31 +129,12 @@
 
 
 
-import { prisma } from '../config/database';
-
 /**
- * Generates a simple 4-digit numeric token that's easier for users to remember and share
+ * Fast token generator (4-digit numeric). Collisions are handled at insertion time
+ * via unique constraint retries in the service layer, so this function does not
+ * perform any database I/O.
  */
 export const generateToken = async (): Promise<string> => {
-  // Batch generate multiple tokens for efficiency
-  const batchSize = 10; // Increased batch size since the token space is smaller
-  const tokens: string[] = [];
-  
-  for (let i = 0; i < batchSize; i++) {
-    // Generate a random 4-digit number
-    const randomNum = Math.floor(1000 + Math.random() * 9000);
-    tokens.push(randomNum.toString());
-  }
-
-  // Check all tokens at once
-  const existingTokens = await prisma.snippet.findMany({
-    where: { token: { in: tokens } },
-    select: { token: true }
-  });
-
-  const existingSet = new Set(existingTokens.map(t => t.token));
-  const availableToken = tokens.find(t => !existingSet.has(t));
-  
-  // If all tokens in batch are used, recursively try again
-  return availableToken || generateToken();
+  const randomNum = Math.floor(1000 + Math.random() * 9000);
+  return String(randomNum);
 };

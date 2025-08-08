@@ -2,7 +2,6 @@ import express from 'express';
 import { snippetController } from '../controllers/snippetController';
 import rateLimit from 'express-rate-limit';
 import { validateSnippetCreation, validateSnippetRetrieval, handleValidationErrors } from '../middlewares/inputvalidation';
-import { cacheMiddleware } from '../middlewares/cacheMiddleware';
 
 const router = express.Router();
 
@@ -21,7 +20,6 @@ router.post('/',
 router.get('/:token', 
   validateSnippetRetrieval,
   handleValidationErrors,
-  cacheMiddleware(60),
   snippetController.getSnippet
 );
 
