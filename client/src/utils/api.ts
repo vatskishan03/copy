@@ -2,11 +2,11 @@
 const isProd = window.location.hostname !== 'localhost';
 
 export const API_BASE_URL = isProd 
-  ? 'https://copy-mkuy.onrender.com/api'  
+  ? 'https://copyit-s4b5s.ondigitalocean.app/api'  
   : 'http://localhost:3001/api';       
 
 export const WEBSOCKET_URL = isProd
-  ? 'wss://copy-mkuy.onrender.com'        
+  ? 'wss://copyit-s4b5s.ondigitalocean.app'        
   : 'ws://localhost:3001';         
 
 export const api = {
