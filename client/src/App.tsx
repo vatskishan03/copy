@@ -5,6 +5,7 @@ import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import { ThemeProvider } from './components/provider/ThemeProvider';
 import { SpeedInsights } from '@vercel/speed-insights/react';
+import { Analytics } from '@vercel/analytics/react';
 
 const App = () => {
   return (
@@ -35,6 +36,7 @@ const App = () => {
           </main>
           <Footer />
           <SpeedInsights />
+          <Analytics />
         </div>
       </BrowserRouter>
     </ThemeProvider>

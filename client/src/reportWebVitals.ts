@@ -12,4 +12,12 @@ const reportWebVitals = (onPerfEntry?: ReportHandler) => {
   }
 };
 
+// Enhanced web vitals reporting for Vercel Analytics
+const reportToVercel = (metric: any) => {
+  // This will be automatically handled by @vercel/analytics
+  // but we can add custom reporting here if needed
+  console.log('Web Vital:', metric);
+};
+
 export default reportWebVitals;
+export { reportToVercel };
