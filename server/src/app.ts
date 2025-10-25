@@ -170,6 +170,15 @@ server.listen(PORT, () => {
   logger.info(`WebSocket server ready for connections`);
 });
 
+// Schedule cleanup job to run every 6 hours
+setInterval(async () => {
+  try {
+    await cleanupService.cleanupExpiredSnippets();
+  } catch (error) {
+    logger.error('Scheduled cleanup failed:', error);
+  }
+}, 6 * 60 * 60 * 1000); // 6 hours
+
 // Handle graceful shutdown
 process.on('SIGTERM', async () => {
   logger.info('SIGTERM received. Starting graceful shutdown...');

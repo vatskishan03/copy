@@ -50,3 +50,4 @@ export const analytics = {
 };
 
 export default analytics;
+

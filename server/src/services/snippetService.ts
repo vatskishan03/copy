@@ -15,7 +15,8 @@ export class SnippetService {
 
   async createSnippet(content: string): Promise<{ token: string }> {
     try {
-      const expiryDate = new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000);
+      // Use configured expiry (7 days = 7 * 24 * 60 * 60 seconds)
+      const expiryDate = new Date(Date.now() + CONFIG.SNIPPET_EXPIRY * 1000);
 
       // Insert-first with retry on unique constraint (P2002)
       for (let attempt = 0; attempt < 5; attempt++) {
@@ -27,8 +28,8 @@ export class SnippetService {
 
           // Fire-and-forget cache writes to avoid blocking response
           const pipeline = this.redis.pipeline();
-          pipeline.setex(`snippet:${token}`, 31536000, JSON.stringify(snippet));
-          pipeline.set(`views:${token}`, 0);
+          pipeline.setex(`snippet:${token}`, SNIPPET_TTL, JSON.stringify(snippet));
+          pipeline.setex(`views:${token}`, SNIPPET_TTL, '0');
           pipeline.exec().catch(err => logger.error('Create cache pipeline failed:', err));
 
           logger.info(`Snippet created with token: ${token}`);
@@ -64,7 +65,7 @@ export class SnippetService {
       } catch (_) {}
 
       if (cached) {
-        // Non-blocking counter updates
+        // Increment Redis view counter (non-blocking)
         this.redis
           .pipeline()
           .incr(`views:${token}`)
@@ -72,21 +73,32 @@ export class SnippetService {
           .exec()
           .catch(() => {});
 
-        this.updateSnippetStats(token).catch(err => logger.error('BG stats update failed:', err));
+        // Background: sync Redis counter to DB and update lastAccessed
+        this.syncViewCountToDB(token).catch(err => 
+          logger.error('BG view sync failed:', err)
+        );
+        
         return cached;
       }
 
-      // DB read on cache miss (single query)
-      const snippet = await this.prisma.snippet.findUnique({ where: { token } });
+      // DB read on cache miss (single query) - increment view count immediately
+      const snippet = await this.prisma.snippet.update({
+        where: { token },
+        data: {
+          viewCount: { increment: 1 },
+          lastAccessed: new Date()
+        }
+      });
+
       if (!snippet) return null;
 
-      // Respond quickly; repopulate cache and update stats in background
+      // Respond quickly; repopulate cache in background
       this.redis
         .pipeline()
-        .setex(`snippet:${token}`, 31536000, JSON.stringify(snippet))
+        .setex(`snippet:${token}`, SNIPPET_TTL, JSON.stringify(snippet))
+        .setex(`views:${token}`, SNIPPET_TTL, String(snippet.viewCount)) // Initialize Redis counter with DB value
         .exec()
         .catch(() => {});
-      this.updateSnippetStats(token, { incrementView: true }).catch(() => {});
 
       return snippet;
     } catch (error) {
@@ -105,8 +117,8 @@ export class SnippetService {
       // Fire-and-forget cache refresh
       this.redis
         .pipeline()
-        .setex(`snippet:${token}`, 31536000, JSON.stringify(updated))
-        .expire(`views:${token}`, 31536000)
+        .setex(`snippet:${token}`, SNIPPET_TTL, JSON.stringify(updated))
+        .expire(`views:${token}`, SNIPPET_TTL)
         .exec()
         .catch(() => {});
 
@@ -117,18 +129,26 @@ export class SnippetService {
     }
   }
 
-  // Background method to sync Redis view counts with database
-  private async updateSnippetStats(token: string, opts?: { incrementView?: boolean }) {
+  // Background method to sync Redis view counts back to database
+  private async syncViewCountToDB(token: string) {
     try {
+      const redisViews = await this.redis.get(`views:${token}`);
+      if (!redisViews) return;
+
+      const viewCount = parseInt(redisViews, 10);
+      
+      // Update DB with Redis counter value and refresh lastAccessed
       await this.prisma.snippet.update({
         where: { token },
         data: {
-          lastAccessed: new Date(),
-          ...(opts?.incrementView ? { viewCount: { increment: 1 } } : {})
+          viewCount,
+          lastAccessed: new Date()
         }
       });
+
+      logger.debug(`Synced view count for token ${token}: ${viewCount}`);
     } catch (error) {
-      logger.error(`Failed to update stats for token ${token}:`, error);
+      logger.error(`Failed to sync view count for token ${token}:`, error);
       // Non-critical operation, so we just log the error
     }
   }
