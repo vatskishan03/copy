@@ -1,7 +1,7 @@
 CopyIt - Real-time Text Sharing Platform
 
 
-CopyIt is a modern, real-time collaborative text sharing platform that allows users to create, share, and collaborate on text snippets with minimal friction. Perfect for quickly sharing code snippets, notes, or any text content across devices and with others.
+CopyIt is a modern, real-time collaborative text-sharing platform that allows users to create, share, and collaborate on text snippets with minimal friction. Perfect for quickly sharing code snippets, notes, or any text content across devices and with others.
 
 
 Features
