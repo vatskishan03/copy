@@ -6,10 +6,12 @@ import { validateSnippetCreation, validateSnippetRetrieval, handleValidationErro
 const router = express.Router();
 
 // Narrow rate limit for mutation routes to protect DB under stress
-const writeLimiter = rateLimit({ windowMs: 60 * 1000, max: 60, standardHeaders: true, legacyHeaders: false });
+const writeLimiter = rateLimit({ windowMs: 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false });
+const writeLimiterDaily = rateLimit({ windowMs: 24 * 60 * 60 * 1000, max: 100, standardHeaders: true, legacyHeaders: false });
 
 // Create snippet
 router.post('/', 
+  writeLimiterDaily,
   writeLimiter,
   validateSnippetCreation, 
   handleValidationErrors, 

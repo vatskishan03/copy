@@ -93,7 +93,7 @@ app.use(helmet());
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per window
+  max: 40, // Limit each IP to 40 requests per window (stricter)
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -103,7 +103,7 @@ app.use('/api/', apiLimiter);
 
 const tokenLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 20, // 20 tokens per hour per IP
+  max: 5, // Only 5 tokens per hour per IP (stricter)
 });
 app.use('/api/snippets/token', tokenLimiter);
 
